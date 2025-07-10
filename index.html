@@ -702,7 +702,7 @@
 
             // Seção: Motoristas em Atraso
             if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
-                reportText += `� *Top motoristas com entregas em atraso:*\n`;
+                reportText += `📌 *Top motoristas com entregas em atraso:*\n`;
                 reportData.motoristasEmAtraso.slice(0, 5).forEach(m => {
                     if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} documentos\n`;
                 });
