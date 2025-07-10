@@ -12,6 +12,7 @@
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
+            zoom: 90%; /* Reduz o zoom global */
         }
         .upload-card {
             border: 2px solid #e5e7eb; /* gray-200 */
@@ -45,11 +46,33 @@
         #tutorial-modal-content {
             max-height: 90vh;
         }
+        /* Animação de erro para o login */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
 
-    <div class="w-full max-w-7xl mx-auto">
+    <!-- Tela de Login -->
+    <div id="login-screen" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-50">
+        <div class="w-full max-w-sm mx-auto bg-white p-8 rounded-xl shadow-2xl text-center">
+            <img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-12 mx-auto mb-6" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Acesso Restrito</h2>
+            <p class="text-gray-600 mb-6">Por favor, insira o código PIN para continuar.</p>
+            <input type="password" id="pin-input" class="w-full text-center tracking-[.5em] bg-white border border-gray-300 rounded-lg p-3 mb-4 text-2xl focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="******" maxlength="6" autocomplete="off">
+            <button id="login-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Entrar</button>
+            <p id="login-error" class="text-red-500 text-sm mt-4 hidden">PIN incorreto. Tente novamente.</p>
+        </div>
+    </div>
+
+    <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
+    <div id="app-content" class="hidden w-full max-w-7xl mx-auto pt-12">
         <!-- Cabeçalho com Logo e Título -->
         <header class="text-center mb-8">
             <img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-16 mx-auto mb-4" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';">
@@ -288,6 +311,11 @@
 
         // --- Referências aos Elementos do DOM ---
         const elements = {
+            loginScreen: document.getElementById('login-screen'),
+            appContent: document.getElementById('app-content'),
+            pinInput: document.getElementById('pin-input'),
+            loginBtn: document.getElementById('login-btn'),
+            loginError: document.getElementById('login-error'),
             gerarBtn: document.getElementById('gerar-relatorio-btn'),
             btnText: document.getElementById('btn-text'),
             spinner: document.getElementById('spinner'),
@@ -354,8 +382,33 @@
                 card.classList.toggle('selected', i + 1 === index);
             });
         }
+        
+        function checkPin() {
+            const correctPin = '311215';
+            if (elements.pinInput.value === correctPin) {
+                elements.loginScreen.classList.add('hidden');
+                elements.appContent.classList.remove('hidden');
+                setupEventListeners(); // Inicia os listeners da aplicação principal
+            } else {
+                elements.loginError.classList.remove('hidden');
+                elements.pinInput.classList.add('shake');
+                elements.pinInput.value = '';
+                setTimeout(() => {
+                    elements.pinInput.classList.remove('shake');
+                }, 500);
+            }
+        }
 
         // --- Configuração dos Event Listeners ---
+        function setupLoginListeners() {
+            elements.loginBtn.addEventListener('click', checkPin);
+            elements.pinInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    checkPin();
+                }
+            });
+        }
+
         function setupEventListeners() {
             elements.uploadCards.forEach((card, index) => {
                 const boxNumber = index + 1;
@@ -722,7 +775,7 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', setupEventListeners);
+        document.addEventListener('DOMContentLoaded', setupLoginListeners);
     </script>
 </body>
 </html>
