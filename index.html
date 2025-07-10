@@ -66,7 +66,13 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Acesso Restrito</h2>
             <p class="text-gray-600 mb-6">Por favor, insira o código PIN para continuar.</p>
             <input type="password" id="pin-input" class="w-full text-center tracking-[.5em] bg-white border border-gray-300 rounded-lg p-3 mb-4 text-2xl focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="******" maxlength="6" autocomplete="off">
-            <button id="login-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Entrar</button>
+            <button id="login-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex justify-center items-center">
+                <svg id="login-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="login-btn-text">Entrar</span>
+            </button>
             <p id="login-error" class="text-red-500 text-sm mt-4 hidden">PIN incorreto. Tente novamente.</p>
         </div>
     </div>
@@ -188,10 +194,18 @@
             <div class="bg-white p-6 rounded-xl shadow-lg">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-900">Relatório Gerado</h2>
-                    <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg flex items-center transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        <span id="copy-btn-text">Copiar Texto</span>
-                    </button>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center">
+                            <input id="copy-with-images-checkbox" type="checkbox" class="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500">
+                            <label for="copy-with-images-checkbox" class="ml-2 block text-sm text-gray-900">
+                                Copiar com imagens
+                            </label>
+                        </div>
+                        <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg flex items-center transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span id="copy-btn-text">Copiar</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                     <pre id="resultado-texto" class="text-gray-700 text-sm whitespace-pre-wrap font-sans"></pre>
@@ -202,7 +216,7 @@
 
     <!-- Mensagem de aviso -->
     <div class="text-center mt-4 text-sm text-gray-500">
-        <p>O meu código pode cometer erros. Por isso, é bom checar o relatório.</p>
+        <p>Gerador - Operação Last Mile - E-mail</p>
     </div>
 
     <!-- Rodapé -->
@@ -308,6 +322,7 @@
         const uploadedImages = { 1: null, 2: null, 3: null, 4: null };
         let justificativas = {};
         let selectedCardIndex = null; // Rastreia o card selecionado
+        let lastReportData = null; // Armazena os dados do último relatório gerado
 
         // --- Referências aos Elementos do DOM ---
         const elements = {
@@ -316,6 +331,8 @@
             pinInput: document.getElementById('pin-input'),
             loginBtn: document.getElementById('login-btn'),
             loginError: document.getElementById('login-error'),
+            loginSpinner: document.getElementById('login-spinner'),
+            loginBtnText: document.getElementById('login-btn-text'),
             gerarBtn: document.getElementById('gerar-relatorio-btn'),
             btnText: document.getElementById('btn-text'),
             spinner: document.getElementById('spinner'),
@@ -324,6 +341,7 @@
             resultadoTexto: document.getElementById('resultado-texto'),
             copyBtn: document.getElementById('copy-btn'),
             copyBtnText: document.getElementById('copy-btn-text'),
+            copyWithImagesCheckbox: document.getElementById('copy-with-images-checkbox'),
             justificativasSecao: document.getElementById('justificativas-secao'),
             justificativasContainer: document.getElementById('justificativas-container'),
             atualizarRelatorioBtn: document.getElementById('atualizar-relatorio-btn'),
@@ -386,9 +404,15 @@
         function checkPin() {
             const correctPin = '311215';
             if (elements.pinInput.value === correctPin) {
-                elements.loginScreen.classList.add('hidden');
-                elements.appContent.classList.remove('hidden');
-                setupEventListeners(); // Inicia os listeners da aplicação principal
+                elements.loginBtn.disabled = true;
+                elements.loginSpinner.classList.remove('hidden');
+                elements.loginBtnText.classList.add('hidden');
+                
+                setTimeout(() => {
+                    elements.loginScreen.classList.add('hidden');
+                    elements.appContent.classList.remove('hidden');
+                    setupEventListeners();
+                }, 1000);
             } else {
                 elements.loginError.classList.remove('hidden');
                 elements.pinInput.classList.add('shake');
@@ -440,6 +464,9 @@
             });
             
             document.addEventListener('paste', (e) => {
+                if (document.activeElement.tagName === 'TEXTAREA') {
+                    return; // Permite o paste padrão em textareas
+                }
                 if (selectedCardIndex === null) return;
                 
                 e.preventDefault();
@@ -586,6 +613,7 @@
                     
                     try {
                         const reportData = JSON.parse(jsonText);
+                        lastReportData = reportData; // Armazena os dados para a função de cópia
                         displayReport(reportData);
                     } catch (parseError) {
                         console.error("Erro ao fazer o parse do JSON:", parseError);
@@ -682,6 +710,96 @@
 
             return reportText.trim();
         }
+        
+        function formatRichReportHTML(reportData) {
+            const today = new Date();
+            const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const filialNome = elements.filialNome.value.trim();
+
+            let html = '<div style="font-family: sans-serif; font-size: 14px; color: #000;">';
+
+            const addLine = (text = '') => {
+                html += text.replace(/\n/g, '<br>') + '<br>';
+            };
+            
+            addLine(`Bom dia!`);
+            addLine(`Senhores, segue o acompanhamento da operação Last Mile da filial ${filialNome} com base nos dados atualizados em ${formattedDate}.`);
+            addLine();
+
+            addLine(`📦 *Visão Geral da Operação*`);
+            addLine(`- Total de Documentos em Trânsito: ${reportData.visaoGeral.totalEmTransito}`);
+            addLine(`- ${reportData.visaoGeral.vencendoHoje.quantidade} documentos (${reportData.visaoGeral.vencendoHoje.percentual}%) com vencimento hoje.`);
+            addLine(`- ${reportData.visaoGeral.emAtraso.quantidade} documentos (${reportData.visaoGeral.emAtraso.percentual}%) estão em atraso.`);
+            addLine();
+
+            if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) {
+                addLine(`📊 *Destaques por Remetente*`);
+                addLine(`Principais remetentes:`);
+                reportData.destaquesRemetentes.slice(0, 4).forEach(r => {
+                    if(r.nome) {
+                        const totalEmTransito = (r.emAtraso || 0) + (r.noPrazo || 0) + (r.vencendoHoje || 0);
+                        let line = `- ${r.nome}: ${totalEmTransito} documentos em trânsito`;
+                        let details = [];
+                        if (r.vencendoHoje > 0) details.push(`${r.vencendoHoje} Vencendo hoje`);
+                        if (r.emAtraso > 0) details.push(`${r.emAtraso} em atraso`);
+                        if (details.length > 0) line += ` (${details.join(', ')})`;
+                        addLine(line);
+                    }
+                });
+                addLine();
+            }
+
+            if (reportData.destaquesCidades && reportData.destaquesCidades.length > 0) {
+                addLine(`📌 *Destaques por Cidade*`);
+                addLine(`Principais cidades com entregas vencendo hoje:`);
+                reportData.destaquesCidades.forEach(c => {
+                    if(c.nome) addLine(`- ${c.nome}: ${c.totalDocumentos} documentos`);
+                });
+                addLine();
+            }
+            
+            if (uploadedImages[1]) {
+                html += `<img src="data:image/jpeg;base64,${uploadedImages[1]}" alt="Visão Geral da Operação" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" /><br>`;
+            }
+
+            if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) {
+                addLine(`🚚 *Top motoristas com maior volume vencendo hoje:*`);
+                reportData.motoristasVencendoHoje.forEach(m => {
+                    if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
+                });
+                addLine();
+            }
+
+            if (uploadedImages[3]) {
+                html += `<img src="data:image/jpeg;base64,${uploadedImages[3]}" alt="Motoristas Vencendo Hoje" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" /><br>`;
+            }
+
+            if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
+                addLine(`🚩 *Top motoristas com entregas em atraso:*`);
+                reportData.motoristasEmAtraso.forEach(m => {
+                    if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
+                });
+                addLine();
+            }
+            
+            const justificationsText = Object.entries(justificativas)
+                .filter(([_, text]) => text.trim() !== "")
+                .map(([sender, text]) => `- ${sender}: ${text}`)
+                .join("\n");
+
+            if (justificationsText) {
+                addLine();
+                addLine("🚩 *Justificativas dos Remetentes em Atraso*");
+                addLine(justificationsText);
+            }
+            
+            if (uploadedImages[4]) {
+                 html += `<br><img src="data:image/jpeg;base64,${uploadedImages[4]}" alt="Motoristas em Atraso" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" />`;
+            }
+
+            html += '</div>';
+            return html;
+        }
 
         function displayReport(reportData) {
             const reportText = formatReport(reportData);
@@ -689,8 +807,6 @@
             elements.resultadoTexto.textContent = reportText;
             window.scrollTo(0, document.body.scrollHeight);
             
-            // --- LÓGICA DE JUSTIFICATIVA ATUALIZADA ---
-            // A seção agora é baseada nos REMETENTES com atraso
             if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) {
                 const lateSenders = reportData.destaquesRemetentes
                     .filter(r => r.emAtraso > 0)
@@ -703,7 +819,6 @@
             }
         }
         
-        // --- SEÇÃO DE JUSTIFICATIVAS ATUALIZADA ---
         function setupJustificativas(senders) {
             elements.justificativasContainer.innerHTML = '';
             senders.forEach((sender) => {
@@ -714,18 +829,22 @@
                 
                 const label = document.createElement('label');
                 label.className = 'block mb-1 font-medium text-gray-700 text-sm';
-                label.textContent = sender; // Agora mostra o nome do remetente
+                label.textContent = sender;
                 label.htmlFor = `justificativa-${sanitizedId}`;
                 
                 const textarea = document.createElement('textarea');
                 textarea.className = 'w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-orange-500 focus:outline-none';
-                textarea.placeholder = `Adicionar justificativa para ${sender}...`; // Placeholder atualizado
+                textarea.placeholder = `Adicionar justificativa para ${sender}...`;
                 textarea.rows = 2;
                 textarea.id = `justificativa-${sanitizedId}`;
-                textarea.dataset.sender = sender; // Usando um dataset mais apropriado
+                textarea.dataset.sender = sender;
                 
                 textarea.addEventListener('input', (e) => {
                     justificativas[e.target.dataset.sender] = e.target.value;
+                });
+                
+                textarea.addEventListener('paste', (e) => {
+                    e.stopPropagation();
                 });
 
                 div.appendChild(label);
@@ -738,13 +857,12 @@
         function updateReportWithJustifications() {
             let currentReport = elements.resultadoTexto.textContent;
             
-            // Atualiza o texto para split e o título final
             const justificationTitle = "🚩 *Justificativas dos Remetentes em Atraso*";
             currentReport = currentReport.split(justificationTitle)[0].trim();
 
             const justificationsText = Object.entries(justificativas)
                 .filter(([_, text]) => text.trim() !== "")
-                .map(([sender, text]) => `- ${sender}: ${text}`) // Mapeia por remetente
+                .map(([sender, text]) => `- ${sender}: ${text}`)
                 .join("\n");
 
             if (justificationsText) {
@@ -759,8 +877,9 @@
         }
 
         function copyToClipboard() {
-            const textToCopy = elements.resultadoTexto.textContent;
-            navigator.clipboard.writeText(textToCopy).then(() => {
+            const isRichText = elements.copyWithImagesCheckbox.checked;
+
+            const showSuccess = () => {
                 const originalText = elements.copyBtnText.textContent;
                 elements.copyBtn.classList.add('copied');
                 elements.copyBtnText.textContent = 'Copiado!';
@@ -769,10 +888,51 @@
                     elements.copyBtn.classList.remove('copied');
                     elements.copyBtnText.textContent = originalText;
                 }, 2000);
-            }).catch(err => {
-                console.error('Erro ao copiar texto: ', err);
-                showError("Não foi possível copiar o texto. Por favor, copie manualmente.");
-            });
+            };
+            
+            try {
+                let contentToCopy;
+                if (isRichText) {
+                    if (!lastReportData) {
+                        showError("Gere um relatório primeiro para copiar com imagens.");
+                        return;
+                    }
+                    contentToCopy = formatRichReportHTML(lastReportData);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.position = 'absolute';
+                    tempDiv.style.left = '-9999px';
+                    tempDiv.innerHTML = contentToCopy;
+                    document.body.appendChild(tempDiv);
+
+                    const range = document.createRange();
+                    range.selectNodeContents(tempDiv);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    const successful = document.execCommand('copy');
+                    selection.removeAllRanges();
+                    document.body.removeChild(tempDiv);
+
+                    if (!successful) throw new Error('document.execCommand falhou para conteúdo rico.');
+
+                } else {
+                    contentToCopy = elements.resultadoTexto.textContent;
+                    const textArea = document.createElement("textarea");
+                    textArea.value = contentToCopy;
+                    textArea.style.position = "absolute";
+                    textArea.style.left = "-9999px";
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    if (!successful) throw new Error('document.execCommand falhou para texto simples.');
+                }
+                showSuccess();
+            } catch (err) {
+                console.error('Erro ao copiar conteúdo: ', err);
+                showError("Não foi possível copiar. Por favor, copie manualmente.");
+            }
         }
 
         document.addEventListener('DOMContentLoaded', setupLoginListeners);
