@@ -216,7 +216,7 @@
 
     <!-- Mensagem de aviso -->
     <div class="text-center mt-4 text-sm text-gray-500">
-        <p>Gerador - Operação Last Mile - E-mail</p>
+        <p>Gerador de E-mail - Operação Last Mile</p>
     </div>
 
     <!-- Rodapé -->
@@ -694,7 +694,7 @@
             // Seção: Motoristas Vencendo Hoje
             if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) {
                 reportText += `🚚 *Top motoristas com maior volume vencendo hoje:*\n`;
-                 reportData.motoristasVencendoHoje.forEach(m => {
+                 reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => {
                     if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} documentos\n`;
                 });
                 reportText += `\n`;
@@ -702,8 +702,8 @@
 
             // Seção: Motoristas em Atraso
             if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
-                reportText += `🚩 *Top motoristas com entregas em atraso:*\n`;
-                reportData.motoristasEmAtraso.forEach(m => {
+                reportText += `� *Top motoristas com entregas em atraso:*\n`;
+                reportData.motoristasEmAtraso.slice(0, 5).forEach(m => {
                     if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} documentos\n`;
                 });
             }
@@ -764,7 +764,7 @@
 
             if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) {
                 addLine(`🚚 *Top motoristas com maior volume vencendo hoje:*`);
-                reportData.motoristasVencendoHoje.forEach(m => {
+                reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => {
                     if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
                 });
                 addLine();
@@ -776,7 +776,7 @@
 
             if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
                 addLine(`🚩 *Top motoristas com entregas em atraso:*`);
-                reportData.motoristasEmAtraso.forEach(m => {
+                reportData.motoristasEmAtraso.slice(0, 5).forEach(m => {
                     if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
                 });
                 addLine();
@@ -939,3 +939,4 @@
     </script>
 </body>
 </html>
+�
