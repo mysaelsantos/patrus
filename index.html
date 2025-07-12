@@ -256,93 +256,101 @@
 
  	<!-- Modal de Tutorial --> 
  	<div id="tutorial-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"> 
- 		<div id="tutorial-modal-content" class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-4xl relative overflow-y-auto"> 
- 			<!-- MODIFICADO: Cabeçalho do tutorial estilizado --> 
- 			<div class="flex justify-center items-center relative bg-red-700 p-4 rounded-lg mb-4"> 
- 				<h2 class="text-2xl font-bold text-white">Tutorial: Como Gerar os Prints</h2> 
- 				<button id="close-tutorial-btn" class="absolute top-1/2 right-4 -translate-y-1/2 text-white hover:text-gray-200"> 
- 					<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> 
- 				</button> 
- 			</div> 
+ 		<!-- Main container with flex-col to separate header and scrollable content --> 
+ 		<div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl flex flex-col" style="max-height: 90vh;"> 
  			 
- 			<!-- ATUALIZADO: Conteúdo do tutorial restaurado --> 
- 			<div id="tutorial-steps-container" class="space-y-6"> 
- 				<!-- Passo 1 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 1: Acessar o Power BI</h3> 
- 					<p class="mb-3">Acesse o Power BI de 'Acompanhamento de Entrega - Diário' clicando no botão abaixo:</p> 
- 					<a href="https://relatorios.patrus.com.br/Reports/powerbi/02.Interna/i.TorreDeControle/Acompanhamento%20De%20Entregas" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"> 
- 						Abrir Power BI 
- 					</a> 
+ 			<!-- Header Area (non-scrollable) --> 
+ 			<!-- MODIFICADO: Aumentado espaçamento inferior (pb-4 -> pb-6) e movido para um container flex-shrink-0 --> 
+ 			<div class="flex-shrink-0 p-6 sm:p-8 pb-6"> 
+ 				<div class="flex justify-center items-center relative bg-red-700 p-4 rounded-lg"> 
+ 					<h2 class="text-2xl font-bold text-white">Tutorial: Como Gerar os Prints</h2> 
+ 					<button id="close-tutorial-btn" class="absolute top-1/2 right-4 -translate-y-1/2 text-white hover:text-gray-200"> 
+ 						<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> 
+ 					</button> 
  				</div> 
- 				<!-- Passo 2 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 2: Início</h3> 
- 					<p class="mb-3">Clique no botão indicado para iniciar.</p> 
- 					<img src="https://i.postimg.cc/SRx61g2B/3.png" alt="Imagem do passo 2" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 3 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 3: Aplicar Filtros Principais</h3> 
- 					<p class="mb-3">Primeiro, em 'Filial Entrega', selecione sua unidade. Depois, em 'Status Documento', marque 'Em Trânsito'.</p> 
- 					<div class="flex flex-wrap items-start gap-4"> 
- 						<img src="https://i.postimg.cc/bNMxLHz5/4.png" alt="Imagem do passo 3a" class="rounded-lg border shadow-sm w-full max-w-xs"> 
- 						<img src="https://i.postimg.cc/brVQ711s/5.png" alt="Imagem do passo 3b" class="rounded-lg border shadow-sm w-full max-w-xs"> 
+ 			</div> 
+
+ 			<!-- Scrollable Content Area --> 
+ 			<!-- MODIFICADO: O conteúdo agora está em um div separado com overflow-y-auto para corrigir o problema da borda arredondada --> 
+ 			<div class="overflow-y-auto px-6 sm:px-8 pb-8"> 
+ 				<div id="tutorial-steps-container" class="space-y-6"> 
+ 					<!-- Passo 1 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 1: Acessar o Power BI</h3> 
+ 						<p class="mb-3">Acesse o Power BI de 'Acompanhamento de Entrega - Diário' clicando no botão abaixo:</p> 
+ 						<a href="https://relatorios.patrus.com.br/Reports/powerbi/02.Interna/i.TorreDeControle/Acompanhamento%20De%20Entregas" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"> 
+ 							Abrir Power BI 
+ 						</a> 
  					</div> 
- 				</div> 
- 				<!-- Passo 4 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 4: Tirar o Primeiro Print</h3> 
- 					<p class="mb-3">Após aplicar os filtros, tire o <strong>primeiro print (Print 1)</strong> desta tela para o Card 1.</p> 
- 					<img src="https://i.postimg.cc/ZK0PrDh3/6.png" alt="Imagem do passo 4" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 5 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 5: Mostrar Remetentes como Tabela</h3> 
- 					<p class="mb-3">Na lista de 'Remetente', clique com o botão direito do mouse e selecione 'Mostrar como uma tabela'.</p> 
- 					<img src="https://i.postimg.cc/NMRv2Chw/Sem-nome-1000-x-1000-px.png" alt="Imagem do passo 5" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 6 --> 
- 				 <div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 6: Tirar o Segundo Print</h3> 
- 					<p class="mb-3">Com a tabela de remetentes visível, tire o <strong>segundo print (Print 2)</strong> da tela para o Card 2.</p> 
- 					<img src="https://i.postimg.cc/T1PQvhJH/Sem-nome-1000-x-1000-px-1.png" alt="Imagem do passo 6" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 7 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 7: Ir para a Seção de Motoristas</h3> 
- 					<p class="mb-3">Navegue para a seção 'Acompanhamento de Entrega - Motorista' clicando na seta indicada.</p> 
- 					<img src="https://i.postimg.cc/Y2dfLBTM/7.png" alt="Imagem do passo 7" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 8 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 8: Filtrar Status do Documento</h3> 
- 					<p class="mb-3">No novo painel, filtre o 'Status Doc.' para 'Em Trânsito'.</p> 
- 					<img src="https://i.postimg.cc/Gmykf8tm/8.png" alt="Imagem do passo 8" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 9 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 9: Filtrar Situação para "Vencendo Hoje"</h3> 
- 					<p class="mb-3">Em seguida, filtre a 'Situação Doc.' para 'Vencendo Hoje'.</p> 
- 					<img src="https://i.postimg.cc/Xv6w6jBc/9.png" alt="Imagem do passo 9" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 10 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 10: Tirar o Terceiro Print</h3> 
- 					<p class="mb-3">Com os filtros aplicados, tire o <strong>terceiro print (Print 3)</strong> da tela para o Card 3.</p> 
- 					<img src="https://i.postimg.cc/g0y3YCv9/10.png" alt="Imagem do passo 10" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 11 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 11: Mudar Situação para "Em Atraso"</h3> 
- 					<p class="mb-3">Mantenha os outros filtros e altere apenas a 'Situação Doc.' para 'Em Aberto em Atraso'.</p> 
- 					<img src="https://i.postimg.cc/FR931TZY/11.png" alt="Imagem do passo 11" class="rounded-lg border shadow-sm w-full max-w-md"> 
- 				</div> 
- 				<!-- Passo 12 --> 
- 				<div class="step"> 
- 					<h3 class="font-bold text-lg mb-2">Passo 12: Tirar o Quarto Print</h3> 
- 					<p class="mb-3">Para finalizar, tire o <strong>quarto print (Print 4)</strong> desta última tela para o Card 4 (opcional).</p> 
- 					<img src="https://i.postimg.cc/3RnpG2Sn/12.png" alt="Imagem do passo 12" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					<!-- Passo 2 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 2: Início</h3> 
+ 						<p class="mb-3">Clique no botão indicado para iniciar.</p> 
+ 						<img src="https://i.postimg.cc/SRx61g2B/3.png" alt="Imagem do passo 2" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 3 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 3: Aplicar Filtros Principais</h3> 
+ 						<p class="mb-3">Primeiro, em 'Filial Entrega', selecione sua unidade. Depois, em 'Status Documento', marque 'Em Trânsito'.</p> 
+ 						<div class="flex flex-wrap items-start gap-4"> 
+ 							<img src="https://i.postimg.cc/bNMxLHz5/4.png" alt="Imagem do passo 3a" class="rounded-lg border shadow-sm w-full max-w-xs"> 
+ 							<img src="https://i.postimg.cc/brVQ711s/5.png" alt="Imagem do passo 3b" class="rounded-lg border shadow-sm w-full max-w-xs"> 
+ 						</div> 
+ 					</div> 
+ 					<!-- Passo 4 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 4: Tirar o Primeiro Print</h3> 
+ 						<p class="mb-3">Após aplicar os filtros, tire o <strong>primeiro print (Print 1)</strong> desta tela para o Card 1.</p> 
+ 						<img src="https://i.postimg.cc/ZK0PrDh3/6.png" alt="Imagem do passo 4" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 5 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 5: Mostrar Remetentes como Tabela</h3> 
+ 						<p class="mb-3">Na lista de 'Remetente', clique com o botão direito do mouse e selecione 'Mostrar como uma tabela'.</p> 
+ 						<img src="https://i.postimg.cc/NMRv2Chw/Sem-nome-1000-x-1000-px.png" alt="Imagem do passo 5" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 6 --> 
+ 					 <div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 6: Tirar o Segundo Print</h3> 
+ 						<p class="mb-3">Com a tabela de remetentes visível, tire o <strong>segundo print (Print 2)</strong> da tela para o Card 2.</p> 
+ 						<img src="https://i.postimg.cc/T1PQvhJH/Sem-nome-1000-x-1000-px-1.png" alt="Imagem do passo 6" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 7 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 7: Ir para a Seção de Motoristas</h3> 
+ 						<p class="mb-3">Navegue para a seção 'Acompanhamento de Entrega - Motorista' clicando na seta indicada.</p> 
+ 						<img src="https://i.postimg.cc/Y2dfLBTM/7.png" alt="Imagem do passo 7" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 8 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 8: Filtrar Status do Documento</h3> 
+ 						<p class="mb-3">No novo painel, filtre o 'Status Doc.' para 'Em Trânsito'.</p> 
+ 						<img src="https://i.postimg.cc/Gmykf8tm/8.png" alt="Imagem do passo 8" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 9 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 9: Filtrar Situação para "Vencendo Hoje"</h3> 
+ 						<p class="mb-3">Em seguida, filtre a 'Situação Doc.' para 'Vencendo Hoje'.</p> 
+ 						<img src="https://i.postimg.cc/Xv6w6jBc/9.png" alt="Imagem do passo 9" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 10 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 10: Tirar o Terceiro Print</h3> 
+ 						<p class="mb-3">Com os filtros aplicados, tire o <strong>terceiro print (Print 3)</strong> da tela para o Card 3.</p> 
+ 						<img src="https://i.postimg.cc/g0y3YCv9/10.png" alt="Imagem do passo 10" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 11 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 11: Mudar Situação para "Em Atraso"</h3> 
+ 						<p class="mb-3">Mantenha os outros filtros e altere apenas a 'Situação Doc.' para 'Em Aberto em Atraso'.</p> 
+ 						<img src="https://i.postimg.cc/FR931TZY/11.png" alt="Imagem do passo 11" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
+ 					<!-- Passo 12 --> 
+ 					<div class="step"> 
+ 						<h3 class="font-bold text-lg mb-2">Passo 12: Tirar o Quarto Print</h3> 
+ 						<p class="mb-3">Para finalizar, tire o <strong>quarto print (Print 4)</strong> desta última tela para o Card 4 (opcional).</p> 
+ 						<img src="https://i.postimg.cc/3RnpG2Sn/12.png" alt="Imagem do passo 12" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 					</div> 
  				</div> 
  			</div> 
  		</div> 
@@ -664,14 +672,14 @@
  				reportText += `\n`; 
  			} 
  			if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) { 
- 				reportText += `🚚 *Top motoristas com maior volume vencendo hoje:*\n`; 
+ 				reportText += `� *Top motoristas com maior volume vencendo hoje:*\n`; 
  				 reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => { 
  					if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} docs\n`; 
  				}); 
  				reportText += `\n`; 
  			} 
  			if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) { 
- 				reportText += `� *Top motoristas com entregas em atraso:*\n`; 
+ 				reportText += `🚩 *Top motoristas com entregas em atraso:*\n`; 
  				reportData.motoristasEmAtraso.slice(0, 5).forEach(m => { 
  					if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} docs\n`; 
  				}); 
@@ -972,4 +980,3 @@
  	</script> 
  </body> 
  </html>
-�
