@@ -1,943 +1,974 @@
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acompanhamento de Entregas - CME</title>
-    <!-- FAVICON ADICIONADO -->
-    <link rel="icon" type="image/png" href="https://i.postimg.cc/7L0D8pLv/Sem-nome-1000-x-1000-px-1.png">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
-            zoom: 90%; /* Reduz o zoom global */
-        }
-        .upload-card {
-            border: 2px solid #e5e7eb; /* gray-200 */
-            transition: all 0.2s ease-in-out;
-            cursor: pointer;
-        }
-        .upload-card.selected {
-            border-color: #F97316; /* orange-500 */
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);
-        }
-        .preview-box {
-            border: 2px dashed #d1d5db; /* gray-300 */
-            background-color: #f9fafb; /* gray-50 */
-            transition: all 0.3s ease;
-            min-height: 180px;
-        }
-        .preview-box.dragover {
-            border-color: #F97316; /* orange-500 */
-            background-color: #fff7ed; /* orange-50 */
-        }
-        .preview-box img {
-            max-height: 180px;
-            object-fit: contain;
-        }
-        /* Estilo para o botão de copiar */
-        #copy-btn.copied {
-            background-color: #16a34a; /* green-600 */
-            color: white;
-        }
-        /* Estilos para o Modal de Tutorial */
-        #tutorial-modal-content {
-            max-height: 90vh;
-        }
-        /* Animação de erro para o login */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
-        }
-        .shake {
-            animation: shake 0.5s;
-        }
-    </style>
-</head>
-<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6">
-
-    <!-- Tela de Login -->
-    <div id="login-screen" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-50">
-        <div class="w-full max-w-sm mx-auto bg-white p-8 rounded-xl shadow-2xl text-center">
-            <img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-12 mx-auto mb-6" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Acesso Restrito</h2>
-            <p class="text-gray-600 mb-6">Por favor, insira o código PIN para continuar.</p>
-            <input type="password" id="pin-input" class="w-full text-center tracking-[.5em] bg-white border border-gray-300 rounded-lg p-3 mb-4 text-2xl focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="******" maxlength="6" autocomplete="off">
-            <button id="login-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex justify-center items-center">
-                <svg id="login-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span id="login-btn-text">Entrar</span>
-            </button>
-            <p id="login-error" class="text-red-500 text-sm mt-4 hidden">PIN incorreto. Tente novamente.</p>
-        </div>
-    </div>
-
-    <!-- Conteúdo Principal da Aplicação (inicialmente oculto) -->
-    <div id="app-content" class="hidden w-full max-w-7xl mx-auto pt-12">
-        <!-- Cabeçalho com Logo e Título -->
-        <header class="text-center mb-8">
-            <img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-16 mx-auto mb-4" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';">
-            <h1 class="text-3xl font-bold text-red-700">Acompanhamento de Entregas - CME</h1>
-            <p class="text-gray-600 mt-2">Faça o upload das imagens para extrair os dados e gerar o texto do relatório.</p>
-            <p class="text-sm text-gray-500 mt-1">Dica: Clique em um dos cards para selecionar e cole uma imagem com Ctrl+V.</p>
-            <div class="mt-6">
-                 <button id="tutorial-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-1 px-3 text-sm rounded-lg shadow-sm transition-all">
-                    Ver Tutorial
-                </button>
-            </div>
-        </header>
-
-        <!-- Cartão Principal -->
-        <main class="bg-white p-8 sm:p-10 rounded-xl shadow-lg w-full">
-            <!-- Nome da Filial -->
-            <div class="mb-8">
-                <label for="filial-nome" class="font-semibold mb-2 block text-gray-700">Nome da Filial/Cidade:</label>
-                <input type="text" id="filial-nome" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="Ex: Feira de Santana">
-            </div>
-
-            <!-- Seção de Uploads -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Card de Upload 1 -->
-                <div id="upload-card-1" class="upload-card rounded-xl p-6 text-center">
-                    <h3 class="font-semibold text-gray-800">1. Visão Geral da Operação</h3>
-                    <p class="text-sm text-gray-500 mb-4">Acompanhamento diário.</p>
-                    <button id="button-1" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button>
-                    <div id="preview-box-1" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center">
-                        <img id="preview-1" class="hidden rounded" src="" alt="Preview Imagem 1">
-                        <div id="placeholder-1" class="text-gray-400">
-                            <svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                            <p class="text-sm mt-2">Aguardando imagem...</p>
-                        </div>
-                    </div>
-                    <input type="file" id="file-input-1" class="hidden" accept="image/*">
-                </div>
-                <!-- Card de Upload 2 (NOVO) -->
-                <div id="upload-card-2" class="upload-card rounded-xl p-6 text-center">
-                    <h3 class="font-semibold text-gray-800">2. Destaques por Remetente</h3>
-                    <p class="text-sm text-gray-500 mb-4">Tabela de remetentes.</p>
-                    <button id="button-2" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button>
-                    <div id="preview-box-2" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center">
-                        <img id="preview-2" class="hidden rounded" src="" alt="Preview Imagem 2">
-                        <div id="placeholder-2" class="text-gray-400">
-                           <svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                            <p class="text-sm mt-2">Aguardando imagem...</p>
-                        </div>
-                    </div>
-                    <input type="file" id="file-input-2" class="hidden" accept="image/*">
-                </div>
-                <!-- Card de Upload 3 -->
-                <div id="upload-card-3" class="upload-card rounded-xl p-6 text-center">
-                    <h3 class="font-semibold text-gray-800">3. Motoristas (Venc. Hoje)</h3>
-                    <p class="text-sm text-gray-500 mb-4">Lista de motoristas.</p>
-                    <button id="button-3" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button>
-                    <div id="preview-box-3" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center">
-                        <img id="preview-3" class="hidden rounded" src="" alt="Preview Imagem 3">
-                        <div id="placeholder-3" class="text-gray-400">
-                            <svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                            <p class="text-sm mt-2">Aguardando imagem...</p>
-                        </div>
-                    </div>
-                    <input type="file" id="file-input-3" class="hidden" accept="image/*">
-                </div>
-                <!-- Card de Upload 4 -->
-                <div id="upload-card-4" class="upload-card rounded-xl p-6 text-center">
-                    <h3 class="font-semibold text-gray-800">4. Motoristas (Em Atraso)</h3>
-                    <p class="text-sm text-gray-500 mb-4">Opcional.</p>
-                    <button id="button-4" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button>
-                    <div id="preview-box-4" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center">
-                        <img id="preview-4" class="hidden rounded" src="" alt="Preview Imagem 4">
-                        <div id="placeholder-4" class="text-gray-400">
-                            <svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                            <p class="text-sm mt-2">Aguardando imagem...</p>
-                        </div>
-                    </div>
-                    <input type="file" id="file-input-4" class="hidden" accept="image/*">
-                </div>
-            </div>
-
-            <!-- Botão de Ação -->
-            <div class="text-center mt-10">
-                <button id="gerar-relatorio-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center mx-auto disabled:bg-gray-400 disabled:cursor-not-allowed">
-                    <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span id="btn-text">Analisar Imagens e Gerar Relatório</span>
-                </button>
-            </div>
-        </main>
-        
-        <!-- Seção de Mensagem de Erro -->
-        <div id="error-message" class="hidden w-full max-w-7xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mt-6" role="alert">
-            <strong class="font-bold">Erro:</strong>
-            <span id="error-text" class="block sm:inline"></span>
-        </div>
-
-        <!-- Seção de Justificativas (Condicional) -->
-        <div id="justificativas-secao" class="hidden w-full max-w-7xl mx-auto mt-6 p-6 bg-white rounded-lg shadow-lg">
-            <h3 class="text-xl font-semibold mb-6 text-orange-600 text-center">🚩 Justificativas dos Remetentes em Atraso</h3>
-            <div id="justificativas-container" class="space-y-3">
-                <!-- Entradas de justificativa serão inseridas aqui via JS -->
-            </div>
-            <button id="atualizar-relatorio-btn" class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg mx-auto block">
-                Adicionar Justificativas ao Relatório
-            </button>
-        </div>
-
-        <!-- Seção de Resultado -->
-        <div id="resultado-secao" class="hidden w-full max-w-7xl mx-auto mt-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-gray-900">Relatório Gerado</h2>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center">
-                            <input id="copy-with-images-checkbox" type="checkbox" class="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500">
-                            <label for="copy-with-images-checkbox" class="ml-2 block text-sm text-gray-900">
-                                Copiar com imagens
-                            </label>
-                        </div>
-                        <button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg flex items-center transition-colors duration-200">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            <span id="copy-btn-text">Copiar</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <pre id="resultado-texto" class="text-gray-700 text-sm whitespace-pre-wrap font-sans"></pre>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Mensagem de aviso -->
-    <div class="text-center mt-4 text-sm text-gray-500">
-        <p>Gerador de E-mail - Operação Last Mile</p>
-    </div>
-
-    <!-- Rodapé -->
-    <footer class="text-center py-4 mt-2 text-xs text-gray-400">
-        <p>Feito por Marcos Santos (OPE NSE)</p>
-    </footer>
-
-    <!-- Modal de Tutorial -->
-    <div id="tutorial-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div id="tutorial-modal-content" class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-4xl relative overflow-y-auto">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Tutorial: Como Gerar os Prints</h2>
-                <button id="close-tutorial-btn" class="text-gray-500 hover:text-gray-800">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            
-            <div id="tutorial-steps-container" class="space-y-6">
-                <!-- Passo 1 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 1: Acessar o Power BI</h3>
-                    <p class="mb-3">Acesse o Power BI de 'Acompanhamento de Entrega - Diário' clicando no botão abaixo:</p>
-                    <a href="https://relatorios.patrus.com.br/Reports/powerbi/02.Interna/i.TorreDeControle/Acompanhamento%20De%20Entregas" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                        Abrir Power BI
-                    </a>
-                </div>
-                <!-- Passo 2 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 2: Início</h3>
-                    <p class="mb-3">Clique no botão indicado para iniciar.</p>
-                    <img src="https://i.postimg.cc/SRx61g2B/3.png" alt="Imagem do passo 2" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 3 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 3: Aplicar Filtros Principais</h3>
-                    <p class="mb-3">Primeiro, em 'Filial Entrega', selecione sua unidade. Depois, em 'Status Documento', marque 'Em Trânsito'.</p>
-                    <div class="flex flex-wrap items-start gap-4">
-                        <img src="https://i.postimg.cc/bNMxLHz5/4.png" alt="Imagem do passo 3a" class="rounded-lg border shadow-sm w-full max-w-xs">
-                        <img src="https://i.postimg.cc/brVQ711s/5.png" alt="Imagem do passo 3b" class="rounded-lg border shadow-sm w-full max-w-xs">
-                    </div>
-                </div>
-                <!-- Passo 4 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 4: Tirar o Primeiro Print</h3>
-                    <p class="mb-3">Após aplicar os filtros, tire o <strong>primeiro print (Print 1)</strong> desta tela para o Card 1.</p>
-                    <img src="https://i.postimg.cc/ZK0PrDh3/6.png" alt="Imagem do passo 4" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 5 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 5: Mostrar Remetentes como Tabela</h3>
-                    <p class="mb-3">Na lista de 'Remetente', clique com o botão direito do mouse e selecione 'Mostrar como uma tabela'.</p>
-                    <img src="https://i.postimg.cc/NMRv2Chw/Sem-nome-1000-x-1000-px.png" alt="Imagem do passo 5" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 6 -->
-                 <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 6: Tirar o Segundo Print</h3>
-                    <p class="mb-3">Com a tabela de remetentes visível, tire o <strong>segundo print (Print 2)</strong> da tela para o Card 2.</p>
-                    <img src="https://i.postimg.cc/T1PQvhJH/Sem-nome-1000-x-1000-px-1.png" alt="Imagem do passo 6" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 7 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 7: Ir para a Seção de Motoristas</h3>
-                    <p class="mb-3">Navegue para a seção 'Acompanhamento de Entrega - Motorista' clicando na seta indicada.</p>
-                    <img src="https://i.postimg.cc/Y2dfLBTM/7.png" alt="Imagem do passo 7" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 8 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 8: Filtrar Status do Documento</h3>
-                    <p class="mb-3">No novo painel, filtre o 'Status Doc.' para 'Em Trânsito'.</p>
-                    <img src="https://i.postimg.cc/Gmykf8tm/8.png" alt="Imagem do passo 8" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 9 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 9: Filtrar Situação para "Vencendo Hoje"</h3>
-                    <p class="mb-3">Em seguida, filtre a 'Situação Doc.' para 'Vencendo Hoje'.</p>
-                    <img src="https://i.postimg.cc/Xv6w6jBc/9.png" alt="Imagem do passo 9" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 10 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 10: Tirar o Terceiro Print</h3>
-                    <p class="mb-3">Com os filtros aplicados, tire o <strong>terceiro print (Print 3)</strong> da tela para o Card 3.</p>
-                    <img src="https://i.postimg.cc/g0y3YCv9/10.png" alt="Imagem do passo 10" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 11 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 11: Mudar Situação para "Em Atraso"</h3>
-                    <p class="mb-3">Mantenha os outros filtros e altere apenas a 'Situação Doc.' para 'Em Aberto em Atraso'.</p>
-                    <img src="https://i.postimg.cc/FR931TZY/11.png" alt="Imagem do passo 11" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-                <!-- Passo 12 -->
-                <div class="step">
-                    <h3 class="font-bold text-lg mb-2">Passo 12: Tirar o Quarto Print</h3>
-                    <p class="mb-3">Para finalizar, tire o <strong>quarto print (Print 4)</strong> desta última tela para o Card 4 (opcional).</p>
-                    <img src="https://i.postimg.cc/3RnpG2Sn/12.png" alt="Imagem do passo 12" class="rounded-lg border shadow-sm w-full max-w-md">
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <script type="module">
-        // Armazenamento dos dados das imagens em base64
-        const uploadedImages = { 1: null, 2: null, 3: null, 4: null };
-        let justificativas = {};
-        let selectedCardIndex = null; // Rastreia o card selecionado
-        let lastReportData = null; // Armazena os dados do último relatório gerado
-
-        // --- Referências aos Elementos do DOM ---
-        const elements = {
-            loginScreen: document.getElementById('login-screen'),
-            appContent: document.getElementById('app-content'),
-            pinInput: document.getElementById('pin-input'),
-            loginBtn: document.getElementById('login-btn'),
-            loginError: document.getElementById('login-error'),
-            loginSpinner: document.getElementById('login-spinner'),
-            loginBtnText: document.getElementById('login-btn-text'),
-            gerarBtn: document.getElementById('gerar-relatorio-btn'),
-            btnText: document.getElementById('btn-text'),
-            spinner: document.getElementById('spinner'),
-            filialNome: document.getElementById('filial-nome'),
-            resultadoSecao: document.getElementById('resultado-secao'),
-            resultadoTexto: document.getElementById('resultado-texto'),
-            copyBtn: document.getElementById('copy-btn'),
-            copyBtnText: document.getElementById('copy-btn-text'),
-            copyWithImagesCheckbox: document.getElementById('copy-with-images-checkbox'),
-            justificativasSecao: document.getElementById('justificativas-secao'),
-            justificativasContainer: document.getElementById('justificativas-container'),
-            atualizarRelatorioBtn: document.getElementById('atualizar-relatorio-btn'),
-            errorMessage: document.getElementById('error-message'),
-            errorText: document.getElementById('error-text'),
-            uploadCards: [
-                document.getElementById('upload-card-1'),
-                document.getElementById('upload-card-2'),
-                document.getElementById('upload-card-3'),
-                document.getElementById('upload-card-4')
-            ],
-            tutorialBtn: document.getElementById('tutorial-btn'),
-            tutorialModalOverlay: document.getElementById('tutorial-modal-overlay'),
-            closeTutorialBtn: document.getElementById('close-tutorial-btn')
-        };
-
-        // --- Funções de UI ---
-        function showLoading(isLoading) {
-            elements.gerarBtn.disabled = isLoading;
-            elements.spinner.classList.toggle('hidden', !isLoading);
-            elements.btnText.textContent = isLoading ? 'Analisando...' : 'Analisar Imagens e Gerar Relatório';
-        }
-        
-        function showError(message) {
-            elements.errorText.textContent = message;
-            elements.errorMessage.classList.remove('hidden');
-        }
-
-        function hideError() {
-            elements.errorMessage.classList.add('hidden');
-        }
-
-        function handleFile(file, boxNumber) {
-            if (!file || !file.type.startsWith('image/')) {
-                showError(`Arquivo inválido no card ${boxNumber}. Por favor, selecione uma imagem.`);
-                return;
-            }
-            hideError();
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const preview = document.getElementById(`preview-${boxNumber}`);
-                const placeholder = document.getElementById(`placeholder-${boxNumber}`);
-                
-                preview.src = e.target.result;
-                preview.classList.remove('hidden');
-                placeholder.classList.add('hidden');
-                uploadedImages[boxNumber] = e.target.result.split(',')[1];
-            };
-            reader.readAsDataURL(file);
-        }
-        
-        function selectCard(index) {
-            selectedCardIndex = index;
-            elements.uploadCards.forEach((card, i) => {
-                card.classList.toggle('selected', i + 1 === index);
-            });
-        }
-        
-        function checkPin() {
-            const correctPin = '311215';
-            if (elements.pinInput.value === correctPin) {
-                elements.loginBtn.disabled = true;
-                elements.loginSpinner.classList.remove('hidden');
-                elements.loginBtnText.classList.add('hidden');
-                
-                setTimeout(() => {
-                    elements.loginScreen.classList.add('hidden');
-                    elements.appContent.classList.remove('hidden');
-                    setupEventListeners();
-                }, 1000);
-            } else {
-                elements.loginError.classList.remove('hidden');
-                elements.pinInput.classList.add('shake');
-                elements.pinInput.value = '';
-                setTimeout(() => {
-                    elements.pinInput.classList.remove('shake');
-                }, 500);
-            }
-        }
-
-        // --- Configuração dos Event Listeners ---
-        function setupLoginListeners() {
-            elements.loginBtn.addEventListener('click', checkPin);
-            elements.pinInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') {
-                    checkPin();
-                }
-            });
-        }
-
-        function setupEventListeners() {
-            elements.uploadCards.forEach((card, index) => {
-                const boxNumber = index + 1;
-                const button = document.getElementById(`button-${boxNumber}`);
-                const fileInput = document.getElementById(`file-input-${boxNumber}`);
-                const previewBox = document.getElementById(`preview-box-${boxNumber}`);
-
-                card.addEventListener('click', () => selectCard(boxNumber));
-                
-                button.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    fileInput.click();
-                });
-
-                fileInput.addEventListener('change', (e) => handleFile(e.target.files[0], boxNumber));
-
-                card.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    previewBox.classList.add('dragover');
-                });
-                card.addEventListener('dragleave', () => previewBox.classList.remove('dragleave'));
-                card.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    previewBox.classList.remove('dragover');
-                    if (e.dataTransfer.files.length) {
-                        handleFile(e.dataTransfer.files[0], boxNumber);
-                    }
-                });
-            });
-            
-            document.addEventListener('paste', (e) => {
-                if (document.activeElement.tagName === 'TEXTAREA') {
-                    return; // Permite o paste padrão em textareas
-                }
-                if (selectedCardIndex === null) return;
-                
-                e.preventDefault();
-                const items = (e.clipboardData || window.clipboardData).items;
-                for (const item of items) {
-                    if (item.type.indexOf('image') !== -1) {
-                        const blob = item.getAsFile();
-                        handleFile(blob, selectedCardIndex);
-                        break;
-                    }
-                }
-            });
-            
-            elements.gerarBtn.addEventListener('click', generateReport);
-            elements.copyBtn.addEventListener('click', copyToClipboard);
-            elements.atualizarRelatorioBtn.addEventListener('click', updateReportWithJustifications);
-
-            // Listeners do Modal de Tutorial
-            elements.tutorialBtn.addEventListener('click', () => {
-                elements.tutorialModalOverlay.classList.remove('hidden');
-            });
-            elements.closeTutorialBtn.addEventListener('click', () => {
-                elements.tutorialModalOverlay.classList.add('hidden');
-            });
-            elements.tutorialModalOverlay.addEventListener('click', (e) => {
-                if (e.target === elements.tutorialModalOverlay) {
-                    elements.tutorialModalOverlay.classList.add('hidden');
-                }
-            });
-        }
-
-        // --- Lógica Principal (Geração do Relatório) ---
-        async function generateReport() {
-            hideError();
-            // Validação atualizada para exigir as 3 primeiras imagens
-            if (!uploadedImages[1] || !uploadedImages[2] || !uploadedImages[3]) {
-                showError('Por favor, adicione as imagens para "Visão Geral", "Destaques por Remetente" e "Motoristas (Venc. Hoje)".');
-                return;
-            }
-            if (!elements.filialNome.value.trim()) {
-                showError('Por favor, preencha o nome da Filial/Cidade.');
-                return;
-            }
-
-            showLoading(true);
-            elements.resultadoSecao.classList.add('hidden');
-            elements.justificativasSecao.classList.add('hidden');
-            justificativas = {};
-
-            // --- PROMPT ATUALIZADO PARA NOVA FORMATAÇÃO ---
-            const prompt = `
-                Você é um assistente de logística ultrapreciso. Sua única tarefa é analisar as imagens fornecidas e extrair os dados solicitados, retornando-os ESTRITAMENTE no formato JSON.
-
-                **Fontes de Dados (Imagens):**
-                1.  **Imagem 1 (Visão Geral):** Use para os totais gerais e destaques da cidade.
-                2.  **Imagem 2 (Tabela de Remetentes):** FONTE PRINCIPAL E ÚNICA para os dados dos remetentes.
-                3.  **Imagem 3 (Motoristas Vencendo Hoje):** Fonte para a lista de motoristas com entregas vencendo hoje.
-                4.  **Imagem 4 (Motoristas em Atraso):** Fonte para a lista de motoristas com entregas em atraso (se existir).
-
-                **Instruções de Extração:**
-                1.  **Da Imagem 1 (Visão Geral):**
-                    * Extraia o valor total de "Em Trânsito".
-                    * Do gráfico de pizza, extraia o número e percentual de "Vencendo hoje" e "Em Aberto em Atraso".
-                    * Da lista "Filial", extraia a principal filial e a quantidade de documentos "Vencendo hoje".
-
-                2.  **Da Imagem 2 (Tabela de Remetentes):**
-                    * TAREFA CRÍTICA: Itere sobre cada linha da tabela. Para cada "Razão Social", extraia os números exatos das colunas "Em Aberto em Atraso", "Em Aberto no Prazo" e "Vencendo hoje". Se a célula estiver vazia, o valor é 0.
-
-                3.  **Da Imagem 3 (Motoristas Vencendo Hoje):**
-                    * Extraia a lista de motoristas e a respectiva quantidade de documentos.
-
-                4.  **Da Imagem 4 (Motoristas em Atraso):**
-                    * Se fornecida, extraia a lista de motoristas e a quantidade. Se não, retorne um array vazio.
-
-                **REGRAS DE OURO:**
-                * **PRECISÃO ABSOLUTA:** Os números devem ser exatos. Se um dado não for encontrado, use o valor 0. NÃO INVENTE DADOS.
-                * **JSON PURO:** Sua resposta deve ser apenas o código JSON.
-
-                **Formato JSON de Saída (Siga EXATAMENTE):**
-                {
-                  "visaoGeral": {
-                    "totalEmTransito": 0,
-                    "vencendoHoje": { "quantidade": 0, "percentual": 0 },
-                    "emAtraso": { "quantidade": 0, "percentual": 0 }
-                  },
-                  "destaquesRemetentes": [
-                    { "nome": "NOME DO REMETENTE 1", "emAtraso": 0, "noPrazo": 0, "vencendoHoje": 0 },
-                    { "nome": "NOME DO REMETENTE 2", "emAtraso": 0, "noPrazo": 0, "vencendoHoje": 0 }
-                  ],
-                  "destaquesCidades": [
-                    { "nome": "NOME DA CIDADE 1", "totalDocumentos": 0 }
-                  ],
-                  "motoristasVencendoHoje": [
-                    { "nome": "NOME DO MOTORISTA 1", "totalDocumentos": 0 }
-                  ],
-                  "motoristasEmAtraso": [
-                    { "nome": "NOME DO MOTORISTA 1", "totalDocumentos": 0 }
-                  ]
-                }
-            `;
-
-            try {
-                const parts = [
-                    { text: prompt },
-                    { inlineData: { mimeType: "image/jpeg", data: uploadedImages[1] } },
-                    { inlineData: { mimeType: "image/jpeg", data: uploadedImages[2] } },
-                    { inlineData: { mimeType: "image/jpeg", data: uploadedImages[3] } },
-                ];
-            
-                if (uploadedImages[4]) {
-                    parts.push({ inlineData: { mimeType: "image/jpeg", data: uploadedImages[4] } });
-                }
-                
-                const payload = { contents: [{ parts }] };
-                // CHAVE DE API INSERIDA AQUI
-                const apiKey = "AIzaSyADKvn2elMCLwpyJu9IBEj-PjxxcAfmVnk"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    throw new Error(`Erro na API: ${response.status} ${response.statusText}. Detalhes: ${errorBody}`);
-                }
-
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
-                    const rawText = result.candidates[0].content.parts[0].text;
-                    
-                    const startIndex = rawText.indexOf('{');
-                    const endIndex = rawText.lastIndexOf('}');
-
-                    if (startIndex === -1 || endIndex === -1) {
-                        console.error("Nenhum JSON válido encontrado na resposta:", rawText);
-                        throw new Error("A API não retornou um objeto JSON reconhecível.");
-                    }
-
-                    const jsonText = rawText.substring(startIndex, endIndex + 1);
-                    
-                    try {
-                        const reportData = JSON.parse(jsonText);
-                        lastReportData = reportData; // Armazena os dados para a função de cópia
-                        displayReport(reportData);
-                    } catch (parseError) {
-                        console.error("Erro ao fazer o parse do JSON:", parseError);
-                        console.error("JSON recebido que causou o erro:", jsonText);
-                        throw new Error(`A IA retornou um formato JSON inválido. Detalhes: ${parseError.message}`);
-                    }
-
-                } else {
-                     console.error("Resposta da API inválida:", result);
-                    throw new Error("A API não retornou um resultado válido. A resposta pode ter sido bloqueada ou estar em formato inesperado.");
-                }
-
-            } catch (error) {
-                console.error("Erro ao gerar relatório:", error);
-                showError(`Ocorreu um erro ao processar a resposta da IA. Verifique o console para detalhes. Erro: ${error.message}`);
-            } finally {
-                showLoading(false);
-            }
-        }
-        
-        // --- FUNÇÕES DE FORMATAÇÃO E EXIBIÇÃO ---
-
-        function formatReport(reportData) {
-            const today = new Date();
-            const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const filialNome = elements.filialNome.value.trim();
-
-            let reportText = `Bom dia!\n`;
-            reportText += `Senhores, segue o acompanhamento da operação Last Mile da filial ${filialNome} com base nos dados atualizados em ${formattedDate}.\n\n`;
-
-            // Seção: Visão Geral
-            reportText += `📦 *Visão Geral da Operação*\n`;
-            reportText += `- Total de Documentos em Trânsito: ${reportData.visaoGeral.totalEmTransito}\n`;
-            reportText += `- ${reportData.visaoGeral.vencendoHoje.quantidade} documentos (${reportData.visaoGeral.vencendoHoje.percentual}%) com vencimento hoje.\n`;
-            reportText += `- ${reportData.visaoGeral.emAtraso.quantidade} documentos (${reportData.visaoGeral.emAtraso.percentual}%) estão em atraso.\n\n`;
-
-            // --- SEÇÃO DE REMETENTES COM NOVO FORMATO ---
-            if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) {
-                reportText += `📊 *Destaques por Remetente*\n`;
-                reportText += `Principais remetentes:\n`;
-                
-                // Limita a 4 remetentes e itera sobre eles
-                reportData.destaquesRemetentes.slice(0, 4).forEach(r => {
-                    if(r.nome) {
-                        // Calcula o total em trânsito para este remetente
-                        const totalEmTransito = (r.emAtraso || 0) + (r.noPrazo || 0) + (r.vencendoHoje || 0);
-                        
-                        // Começa a construir a linha do relatório
-                        let line = `- ${r.nome}: ${totalEmTransito} documentos em trânsito`;
-                        
-                        // Constrói a parte dos detalhes (entre parênteses)
-                        let details = [];
-                        if (r.vencendoHoje > 0) details.push(`${r.vencendoHoje} Vencendo hoje`);
-                        if (r.emAtraso > 0) details.push(`${r.emAtraso} em atraso`);
-                        
-                        // Se houver detalhes, adiciona-os à linha
-                        if (details.length > 0) {
-                           line += ` (${details.join(', ')})`;
-                        }
-                        
-                        reportText += line + '\n';
-                    }
-                });
-                reportText += `\n`;
-            }
-            // --- FIM DA SEÇÃO DE REMETENTES ---
-
-            // Seção: Destaques por Cidade
-            if (reportData.destaquesCidades && reportData.destaquesCidades.length > 0) {
-                reportText += `📌 *Destaques por Cidade*\n`;
-                reportText += `Principais cidades com entregas vencendo hoje:\n`;
-                 reportData.destaquesCidades.forEach(c => {
-                    if(c.nome) reportText += `- ${c.nome}: ${c.totalDocumentos} documentos\n`;
-                });
-                reportText += `\n`;
-            }
-            
-            // Seção: Motoristas Vencendo Hoje
-            if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) {
-                reportText += `🚚 *Top motoristas com maior volume vencendo hoje:*\n`;
-                 reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => {
-                    if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} documentos\n`;
-                });
-                reportText += `\n`;
-            }
-
-            // Seção: Motoristas em Atraso
-            if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
-                reportText += `📌 *Top motoristas com entregas em atraso:*\n`;
-                reportData.motoristasEmAtraso.slice(0, 5).forEach(m => {
-                    if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} documentos\n`;
-                });
-            }
-
-            return reportText.trim();
-        }
-        
-        function formatRichReportHTML(reportData) {
-            const today = new Date();
-            const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const filialNome = elements.filialNome.value.trim();
-
-            let html = '<div style="font-family: sans-serif; font-size: 14px; color: #000;">';
-
-            const addLine = (text = '') => {
-                html += text.replace(/\n/g, '<br>') + '<br>';
-            };
-            
-            addLine(`Bom dia!`);
-            addLine(`Senhores, segue o acompanhamento da operação Last Mile da filial ${filialNome} com base nos dados atualizados em ${formattedDate}.`);
-            addLine();
-
-            addLine(`📦 *Visão Geral da Operação*`);
-            addLine(`- Total de Documentos em Trânsito: ${reportData.visaoGeral.totalEmTransito}`);
-            addLine(`- ${reportData.visaoGeral.vencendoHoje.quantidade} documentos (${reportData.visaoGeral.vencendoHoje.percentual}%) com vencimento hoje.`);
-            addLine(`- ${reportData.visaoGeral.emAtraso.quantidade} documentos (${reportData.visaoGeral.emAtraso.percentual}%) estão em atraso.`);
-            addLine();
-
-            if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) {
-                addLine(`📊 *Destaques por Remetente*`);
-                addLine(`Principais remetentes:`);
-                reportData.destaquesRemetentes.slice(0, 4).forEach(r => {
-                    if(r.nome) {
-                        const totalEmTransito = (r.emAtraso || 0) + (r.noPrazo || 0) + (r.vencendoHoje || 0);
-                        let line = `- ${r.nome}: ${totalEmTransito} documentos em trânsito`;
-                        let details = [];
-                        if (r.vencendoHoje > 0) details.push(`${r.vencendoHoje} Vencendo hoje`);
-                        if (r.emAtraso > 0) details.push(`${r.emAtraso} em atraso`);
-                        if (details.length > 0) line += ` (${details.join(', ')})`;
-                        addLine(line);
-                    }
-                });
-                addLine();
-            }
-
-            if (reportData.destaquesCidades && reportData.destaquesCidades.length > 0) {
-                addLine(`📌 *Destaques por Cidade*`);
-                addLine(`Principais cidades com entregas vencendo hoje:`);
-                reportData.destaquesCidades.forEach(c => {
-                    if(c.nome) addLine(`- ${c.nome}: ${c.totalDocumentos} documentos`);
-                });
-                addLine();
-            }
-            
-            if (uploadedImages[1]) {
-                html += `<img src="data:image/jpeg;base64,${uploadedImages[1]}" alt="Visão Geral da Operação" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" /><br>`;
-            }
-
-            if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) {
-                addLine(`🚚 *Top motoristas com maior volume vencendo hoje:*`);
-                reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => {
-                    if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
-                });
-                addLine();
-            }
-
-            if (uploadedImages[3]) {
-                html += `<img src="data:image/jpeg;base64,${uploadedImages[3]}" alt="Motoristas Vencendo Hoje" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" /><br>`;
-            }
-
-            if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) {
-                addLine(`🚩 *Top motoristas com entregas em atraso:*`);
-                reportData.motoristasEmAtraso.slice(0, 5).forEach(m => {
-                    if(m.nome) addLine(`- ${m.nome}: ${m.totalDocumentos} documentos`);
-                });
-                addLine();
-            }
-            
-            const justificationsText = Object.entries(justificativas)
-                .filter(([_, text]) => text.trim() !== "")
-                .map(([sender, text]) => `- ${sender}: ${text}`)
-                .join("\n");
-
-            if (justificationsText) {
-                addLine();
-                addLine("🚩 *Justificativas dos Remetentes em Atraso*");
-                addLine(justificationsText);
-            }
-            
-            if (uploadedImages[4]) {
-                 html += `<br><img src="data:image/jpeg;base64,${uploadedImages[4]}" alt="Motoristas em Atraso" style="max-width: 25%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" />`;
-            }
-
-            html += '</div>';
-            return html;
-        }
-
-        function displayReport(reportData) {
-            const reportText = formatReport(reportData);
-            elements.resultadoSecao.classList.remove('hidden');
-            elements.resultadoTexto.textContent = reportText;
-            window.scrollTo(0, document.body.scrollHeight);
-            
-            if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) {
-                const lateSenders = reportData.destaquesRemetentes
-                    .filter(r => r.emAtraso > 0)
-                    .map(r => r.nome)
-                    .filter(Boolean);
-
-                if (lateSenders.length > 0) {
-                    setupJustificativas(lateSenders);
-                }
-            }
-        }
-        
-        function setupJustificativas(senders) {
-            elements.justificativasContainer.innerHTML = '';
-            senders.forEach((sender) => {
-                const sanitizedId = sender.replace(/\s+/g, '-');
-
-                const div = document.createElement('div');
-                div.className = 'mb-3';
-                
-                const label = document.createElement('label');
-                label.className = 'block mb-1 font-medium text-gray-700 text-sm';
-                label.textContent = sender;
-                label.htmlFor = `justificativa-${sanitizedId}`;
-                
-                const textarea = document.createElement('textarea');
-                textarea.className = 'w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-orange-500 focus:outline-none';
-                textarea.placeholder = `Adicionar justificativa para ${sender}...`;
-                textarea.rows = 2;
-                textarea.id = `justificativa-${sanitizedId}`;
-                textarea.dataset.sender = sender;
-                
-                textarea.addEventListener('input', (e) => {
-                    justificativas[e.target.dataset.sender] = e.target.value;
-                });
-                
-                textarea.addEventListener('paste', (e) => {
-                    e.stopPropagation();
-                });
-
-                div.appendChild(label);
-                div.appendChild(textarea);
-                elements.justificativasContainer.appendChild(div);
-            });
-            elements.justificativasSecao.classList.remove('hidden');
-        }
-
-        function updateReportWithJustifications() {
-            let currentReport = elements.resultadoTexto.textContent;
-            
-            const justificationTitle = "🚩 *Justificativas dos Remetentes em Atraso*";
-            currentReport = currentReport.split(justificationTitle)[0].trim();
-
-            const justificationsText = Object.entries(justificativas)
-                .filter(([_, text]) => text.trim() !== "")
-                .map(([sender, text]) => `- ${sender}: ${text}`)
-                .join("\n");
-
-            if (justificationsText) {
-                const finalReport = `${currentReport}\n\n${justificationTitle}\n${justificationsText}`;
-                elements.resultadoTexto.textContent = finalReport;
-            } else {
-                 elements.resultadoTexto.textContent = currentReport;
-            }
-            
-            elements.copyBtn.focus();
-            elements.justificativasSecao.classList.add('hidden');
-        }
-
-        function copyToClipboard() {
-            const isRichText = elements.copyWithImagesCheckbox.checked;
-
-            const showSuccess = () => {
-                const originalText = elements.copyBtnText.textContent;
-                elements.copyBtn.classList.add('copied');
-                elements.copyBtnText.textContent = 'Copiado!';
-                
-                setTimeout(() => {
-                    elements.copyBtn.classList.remove('copied');
-                    elements.copyBtnText.textContent = originalText;
-                }, 2000);
-            };
-            
-            try {
-                let contentToCopy;
-                if (isRichText) {
-                    if (!lastReportData) {
-                        showError("Gere um relatório primeiro para copiar com imagens.");
-                        return;
-                    }
-                    contentToCopy = formatRichReportHTML(lastReportData);
-                    const tempDiv = document.createElement('div');
-                    tempDiv.style.position = 'absolute';
-                    tempDiv.style.left = '-9999px';
-                    tempDiv.innerHTML = contentToCopy;
-                    document.body.appendChild(tempDiv);
-
-                    const range = document.createRange();
-                    range.selectNodeContents(tempDiv);
-                    const selection = window.getSelection();
-                    selection.removeAllRanges();
-                    selection.addRange(range);
-                    
-                    const successful = document.execCommand('copy');
-                    selection.removeAllRanges();
-                    document.body.removeChild(tempDiv);
-
-                    if (!successful) throw new Error('document.execCommand falhou para conteúdo rico.');
-
-                } else {
-                    contentToCopy = elements.resultadoTexto.textContent;
-                    const textArea = document.createElement("textarea");
-                    textArea.value = contentToCopy;
-                    textArea.style.position = "absolute";
-                    textArea.style.left = "-9999px";
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    const successful = document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    if (!successful) throw new Error('document.execCommand falhou para texto simples.');
-                }
-                showSuccess();
-            } catch (err) {
-                console.error('Erro ao copiar conteúdo: ', err);
-                showError("Não foi possível copiar. Por favor, copie manualmente.");
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', setupLoginListeners);
-    </script>
-</body>
-</html>
-
+<!DOCTYPE html> 
+ <html lang="pt-BR"> 
+ <head> 
+ 	<meta charset="UTF-8"> 
+ 	<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+ 	<title>Acompanhamento de Entregas - CME</title> 
+ 	<!-- FAVICON ADICIONADO --> 
+ 	<link rel="icon" type="image/png" href="https://i.postimg.cc/7L0D8pLv/Sem-nome-1000-x-1000-px-1.png"> 
+ 	<script src="https://cdn.tailwindcss.com"></script> 
+ 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"> 
+ 	<style> 
+ 		body { 
+ 			font-family: 'Inter', sans-serif; 
+ 			scroll-behavior: smooth; 
+ 			zoom: 90%; /* Reduz o zoom global */ 
+ 		} 
+ 		.upload-card { 
+ 			border: 2px solid #e5e7eb; /* gray-200 */ 
+ 			transition: all 0.2s ease-in-out; 
+ 			cursor: pointer; 
+ 		} 
+ 		.upload-card.selected { 
+ 			border-color: #F97316; /* orange-500 */ 
+ 			box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3); 
+ 		} 
+ 		.preview-box { 
+ 			border: 2px dashed #d1d5db; /* gray-300 */ 
+ 			background-color: #f9fafb; /* gray-50 */ 
+ 			transition: all 0.3s ease; 
+ 			min-height: 180px; 
+ 		} 
+ 		.preview-box.dragover { 
+ 			border-color: #F97316; /* orange-500 */ 
+ 			background-color: #fff7ed; /* orange-50 */ 
+ 		} 
+ 		.preview-box img { 
+ 			max-height: 180px; 
+ 			object-fit: contain; 
+ 		} 
+ 		/* Estilo para o botão de copiar */ 
+ 		#copy-btn.copied { 
+ 			background-color: #16a34a; /* green-600 */ 
+ 			color: white; 
+ 		} 
+ 		/* Estilos para o Modal de Tutorial */ 
+ 		#tutorial-modal-content { 
+ 			max-height: 90vh; 
+ 		} 
+ 		/* Animação de erro para o login */ 
+ 		@keyframes shake { 
+ 			0%, 100% { transform: translateX(0); } 
+ 			10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); } 
+ 			20%, 40%, 60%, 80% { transform: translateX(10px); } 
+ 		} 
+ 		.shake { 
+ 			animation: shake 0.5s; 
+ 		} 
+ 	</style> 
+ </head> 
+ <body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6"> 
+
+ 	<!-- Tela de Login --> 
+ 	<div id="login-screen" class="fixed inset-0 bg-gray-200 flex items-center justify-center z-50"> 
+ 		<div class="w-full max-w-sm mx-auto bg-white p-8 rounded-xl shadow-2xl text-center"> 
+ 			<!-- MODIFICADO: Imagem 15% menor (h-12 -> h-10) --> 
+ 			<img src="https://i.postimg.cc/qRsRfTfS/Sem-nome-1000-x-1000-px-3.png" alt="Logo da Empresa" class="h-10 mx-auto mb-6" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';"> 
+ 			<h2 class="text-2xl font-bold text-gray-800 mb-4">Acesso Restrito</h2> 
+ 			<p class="text-gray-600 mb-6">Por favor, insira o código PIN para continuar.</p> 
+ 			<input type="password" id="pin-input" class="w-full text-center tracking-[.5em] bg-white border border-gray-300 rounded-lg p-3 mb-4 text-2xl focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="******" maxlength="6" autocomplete="off"> 
+ 			<button id="login-btn" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 flex justify-center items-center"> 
+ 				<svg id="login-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"> 
+ 					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle> 
+ 					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path> 
+ 				</svg> 
+ 				<span id="login-btn-text">Entrar</span> 
+ 			</button> 
+ 			<p id="login-error" class="text-red-500 text-sm mt-4 hidden">PIN incorreto. Tente novamente.</p> 
+ 		</div> 
+ 	</div> 
+
+ 	<!-- Conteúdo Principal da Aplicação (inicialmente oculto) --> 
+ 	<div id="app-content" class="hidden w-full max-w-7xl mx-auto pt-12"> 
+ 		<!-- Cabeçalho com Logo e Título --> 
+ 		<header class="text-center mb-8"> 
+ 			<!-- MODIFICADO: Imagem 15% menor (h-16 -> h-14) --> 
+ 			<img src="https://i.postimg.cc/qRsRfTfS/Sem-nome-1000-x-1000-px-3.png" alt="Logo da Empresa" class="h-14 mx-auto mb-4" onerror="this.onerror=null;this.src='https://placehold.co/200x64/cccccc/ffffff?text=Logo';"> 
+ 			<h1 class="text-3xl font-bold text-red-700">Acompanhamento de Entregas - CME</h1> 
+ 			<p class="text-gray-600 mt-2">Faça o upload das imagens para extrair os dados e gerar o texto do relatório.</p> 
+ 			<p class="text-sm text-gray-500 mt-1">Dica: Clique em um dos cards para selecionar e cole uma imagem com Ctrl+V.</p> 
+ 			<div class="mt-6"> 
+ 				 <button id="tutorial-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-1 px-3 text-sm rounded-lg shadow-sm transition-all"> 
+ 					 Ver Tutorial 
+ 				 </button> 
+ 			</div> 
+ 		</header> 
+
+ 		<!-- Cartão Principal --> 
+ 		<main class="bg-white p-8 sm:p-10 rounded-xl shadow-lg w-full"> 
+ 			<!-- Nome da Filial --> 
+ 			<div class="mb-8"> 
+ 				<label for="filial-nome" class="font-semibold mb-2 block text-gray-700">Nome da Filial/Cidade:</label> 
+ 				<input type="text" id="filial-nome" class="w-full bg-white border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-orange-500 focus:outline-none" placeholder="Ex: Feira de Santana"> 
+ 			</div> 
+
+ 			<!-- Seção de Uploads --> 
+ 			<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6"> 
+ 				<!-- Card de Upload 1 --> 
+ 				<div id="upload-card-1" class="upload-card rounded-xl p-6 text-center"> 
+ 					<h3 class="font-semibold text-gray-800">1. Visão Geral</h3> 
+ 					<p class="text-sm text-gray-500 mb-4">Acompanhamento diário.</p> 
+ 					<button id="button-1" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button> 
+ 					<div id="preview-box-1" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center"> 
+ 						<img id="preview-1" class="hidden rounded" src="" alt="Preview Imagem 1"> 
+ 						<div id="placeholder-1" class="text-gray-400"> 
+ 							<svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg> 
+ 							<p class="text-sm mt-2">Aguardando imagem...</p> 
+ 						</div> 
+ 					</div> 
+ 					<input type="file" id="file-input-1" class="hidden" accept="image/*"> 
+ 				</div> 
+ 				<!-- Card de Upload 2 --> 
+ 				<div id="upload-card-2" class="upload-card rounded-xl p-6 text-center"> 
+ 					<h3 class="font-semibold text-gray-800">2. Destaques Remetente</h3> 
+ 					<p class="text-sm text-gray-500 mb-4">Tabela de remetentes.</p> 
+ 					<button id="button-2" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button> 
+ 					<div id="preview-box-2" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center"> 
+ 						<img id="preview-2" class="hidden rounded" src="" alt="Preview Imagem 2"> 
+ 						<div id="placeholder-2" class="text-gray-400"> 
+ 							<svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg> 
+ 							<p class="text-sm mt-2">Aguardando imagem...</p> 
+ 						</div> 
+ 					</div> 
+ 					<input type="file" id="file-input-2" class="hidden" accept="image/*"> 
+ 				</div> 
+ 				<!-- Card de Upload 3 --> 
+ 				<div id="upload-card-3" class="upload-card rounded-xl p-6 text-center"> 
+ 					<h3 class="font-semibold text-gray-800">3. Documentos em Atraso</h3> 
+ 					<p class="text-sm text-gray-500 mb-4">Tabela de documentos.</p> 
+ 					<button id="button-3" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button> 
+ 					<div id="preview-box-3" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center"> 
+ 						<img id="preview-3" class="hidden rounded" src="" alt="Preview Imagem 3"> 
+ 						<div id="placeholder-3" class="text-gray-400"> 
+ 							<svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg> 
+ 							<p class="text-sm mt-2">Aguardando imagem...</p> 
+ 						</div> 
+ 					</div> 
+ 					<input type="file" id="file-input-3" class="hidden" accept="image/*"> 
+ 				</div> 
+ 				<!-- Card de Upload 4 --> 
+ 				<div id="upload-card-4" class="upload-card rounded-xl p-6 text-center"> 
+ 					<h3 class="font-semibold text-gray-800">4. Motoristas (Venc. Hoje)</h3> 
+ 					<p class="text-sm text-gray-500 mb-4">Lista de motoristas.</p> 
+ 					<button id="button-4" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button> 
+ 					<div id="preview-box-4" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center"> 
+ 						<img id="preview-4" class="hidden rounded" src="" alt="Preview Imagem 4"> 
+ 						<div id="placeholder-4" class="text-gray-400"> 
+ 							<svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg> 
+ 							<p class="text-sm mt-2">Aguardando imagem...</p> 
+ 						</div> 
+ 					</div> 
+ 					<input type="file" id="file-input-4" class="hidden" accept="image/*"> 
+ 				</div> 
+ 				<!-- Card de Upload 5 --> 
+ 				<div id="upload-card-5" class="upload-card rounded-xl p-6 text-center"> 
+ 					<h3 class="font-semibold text-gray-800">5. Motoristas (Em Atraso)</h3> 
+ 					<p class="text-sm text-gray-500 mb-4">Opcional.</p> 
+ 					<button id="button-5" class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg mb-4">Selecionar Imagem</button> 
+ 					<div id="preview-box-5" class="preview-box rounded-lg p-4 flex flex-col justify-center items-center"> 
+ 						<img id="preview-5" class="hidden rounded" src="" alt="Preview Imagem 5"> 
+ 						<div id="placeholder-5" class="text-gray-400"> 
+ 							<svg class="w-10 h-10 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg> 
+ 							<p class="text-sm mt-2">Aguardando imagem...</p> 
+ 						</div> 
+ 					</div> 
+ 					<input type="file" id="file-input-5" class="hidden" accept="image/*"> 
+ 				</div> 
+ 			</div> 
+
+ 			<!-- Botão de Ação --> 
+ 			<div class="text-center mt-10"> 
+ 				<button id="gerar-relatorio-btn" class="bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-10 rounded-lg shadow-md transition-transform transform hover:scale-105 flex items-center justify-center mx-auto disabled:bg-gray-400 disabled:cursor-not-allowed"> 
+ 					<svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"> 
+ 						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle> 
+ 						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path> 
+ 					</svg> 
+ 					<span id="btn-text">Analisar Imagens e Gerar Relatório</span> 
+ 				</button> 
+ 			</div> 
+ 		</main> 
+ 		 
+ 		<!-- Seção de Mensagem de Erro --> 
+ 		<div id="error-message" class="hidden w-full max-w-7xl mx-auto bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mt-6" role="alert"> 
+ 			<strong class="font-bold">Erro:</strong> 
+ 			<span id="error-text" class="block sm:inline"></span> 
+ 		</div> 
+
+ 		<!-- Seção de Resultado --> 
+ 		<div id="resultado-secao" class="hidden w-full max-w-7xl mx-auto mt-6 mb-8"> 
+ 			<div class="bg-white p-6 rounded-xl shadow-lg"> 
+ 				<div class="flex justify-between items-center mb-4"> 
+ 					<h2 class="text-2xl font-bold text-gray-900">Relatório Gerado</h2> 
+ 					<div class="flex items-center space-x-4"> 
+ 						<div class="flex items-center"> 
+ 							<input id="copy-with-images-checkbox" type="checkbox" class="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"> 
+ 							<label for="copy-with-images-checkbox" class="ml-2 block text-sm text-gray-900"> 
+ 								Copiar com imagens 
+ 							</label> 
+ 						</div> 
+ 						<button id="copy-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg flex items-center transition-colors duration-200"> 
+ 							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 
+ 							<span id="copy-btn-text">Copiar</span> 
+ 						</button> 
+ 					</div> 
+ 				</div> 
+ 				<div class="bg-gray-50 p-4 rounded-lg border border-gray-200"> 
+ 					<pre id="resultado-texto" class="text-gray-700 text-sm whitespace-pre-wrap font-sans"></pre> 
+ 				</div> 
+ 			</div> 
+ 		</div> 
+
+ 		<!-- Seção de Justificativas (Condicional) --> 
+ 		<div id="justificativas-secao" class="hidden w-full max-w-7xl mx-auto mt-6 p-6 bg-white rounded-lg shadow-lg"> 
+ 			<h3 class="text-xl font-semibold mb-6 text-orange-600 text-center">🚩 Justificativas dos Remetentes em Atraso</h3> 
+ 			<div id="justificativas-container" class="space-y-3"> 
+ 				<!-- Entradas de justificativa serão inseridas aqui via JS --> 
+ 			</div> 
+ 			<!-- Botão de expandir será inserido aqui pelo JS --> 
+ 			<button id="atualizar-relatorio-btn" class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg mx-auto block"> 
+ 				Adicionar Justificativas ao Relatório 
+ 			</button> 
+ 		</div> 
+
+ 		<!-- Seção de Pontos de Atenção (NOVO) --> 
+ 		<div id="pontos-atencao-secao" class="hidden w-full max-w-7xl mx-auto mt-6 p-6 bg-white rounded-lg shadow-lg"> 
+ 			<h3 class="text-xl font-semibold mb-6 text-blue-600 text-center">🚩 Pontos de Atenção</h3> 
+ 			<div id="pontos-atencao-container" class="space-y-3"> 
+ 				<!-- Campos de pontos de atenção serão inseridos aqui via JS --> 
+ 			</div> 
+ 			<!-- MODIFICADO: Cor do botão alterada para laranja --> 
+ 			<button id="adicionar-pontos-btn" class="mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg mx-auto block"> 
+ 				Adicionar Pontos ao Relatório 
+ 			</button> 
+ 		</div> 
+ 	</div> 
+
+ 	<!-- ATUALIZADO: Aumentado o espaçamento superior (mt-24) --> 
+ 	<div class="text-center mt-24 text-sm text-gray-500"> 
+ 		<img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-8 mx-auto mb-2" onerror="this.onerror=null;this.src='https://placehold.co/100x32/cccccc/ffffff?text=Logo';"> 
+ 		<p>Gerador de Relatórios em Texto</p> 
+ 	</div> 
+
+ 	<!-- Rodapé --> 
+ 	<footer class="text-center py-4 mt-2 text-xs text-gray-400"> 
+ 		<p>Feito por Marcos Santos (OPE NSE)</p> 
+ 	</footer> 
+
+ 	<!-- Modal de Tutorial --> 
+ 	<div id="tutorial-modal-overlay" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"> 
+ 		<div id="tutorial-modal-content" class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-4xl relative overflow-y-auto"> 
+ 			<!-- MODIFICADO: Cabeçalho do tutorial estilizado --> 
+ 			<div class="flex justify-center items-center relative bg-red-700 p-4 rounded-lg mb-4"> 
+ 				<h2 class="text-2xl font-bold text-white">Tutorial: Como Gerar os Prints</h2> 
+ 				<button id="close-tutorial-btn" class="absolute top-1/2 right-4 -translate-y-1/2 text-white hover:text-gray-200"> 
+ 					<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> 
+ 				</button> 
+ 			</div> 
+ 			 
+ 			<!-- ATUALIZADO: Conteúdo do tutorial restaurado --> 
+ 			<div id="tutorial-steps-container" class="space-y-6"> 
+ 				<!-- Passo 1 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 1: Acessar o Power BI</h3> 
+ 					<p class="mb-3">Acesse o Power BI de 'Acompanhamento de Entrega - Diário' clicando no botão abaixo:</p> 
+ 					<a href="https://relatorios.patrus.com.br/Reports/powerbi/02.Interna/i.TorreDeControle/Acompanhamento%20De%20Entregas" target="_blank" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"> 
+ 						Abrir Power BI 
+ 					</a> 
+ 				</div> 
+ 				<!-- Passo 2 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 2: Início</h3> 
+ 					<p class="mb-3">Clique no botão indicado para iniciar.</p> 
+ 					<img src="https://i.postimg.cc/SRx61g2B/3.png" alt="Imagem do passo 2" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 3 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 3: Aplicar Filtros Principais</h3> 
+ 					<p class="mb-3">Primeiro, em 'Filial Entrega', selecione sua unidade. Depois, em 'Status Documento', marque 'Em Trânsito'.</p> 
+ 					<div class="flex flex-wrap items-start gap-4"> 
+ 						<img src="https://i.postimg.cc/bNMxLHz5/4.png" alt="Imagem do passo 3a" class="rounded-lg border shadow-sm w-full max-w-xs"> 
+ 						<img src="https://i.postimg.cc/brVQ711s/5.png" alt="Imagem do passo 3b" class="rounded-lg border shadow-sm w-full max-w-xs"> 
+ 					</div> 
+ 				</div> 
+ 				<!-- Passo 4 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 4: Tirar o Primeiro Print</h3> 
+ 					<p class="mb-3">Após aplicar os filtros, tire o <strong>primeiro print (Print 1)</strong> desta tela para o Card 1.</p> 
+ 					<img src="https://i.postimg.cc/ZK0PrDh3/6.png" alt="Imagem do passo 4" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 5 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 5: Mostrar Remetentes como Tabela</h3> 
+ 					<p class="mb-3">Na lista de 'Remetente', clique com o botão direito do mouse e selecione 'Mostrar como uma tabela'.</p> 
+ 					<img src="https://i.postimg.cc/NMRv2Chw/Sem-nome-1000-x-1000-px.png" alt="Imagem do passo 5" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 6 --> 
+ 				 <div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 6: Tirar o Segundo Print</h3> 
+ 					<p class="mb-3">Com a tabela de remetentes visível, tire o <strong>segundo print (Print 2)</strong> da tela para o Card 2.</p> 
+ 					<img src="https://i.postimg.cc/T1PQvhJH/Sem-nome-1000-x-1000-px-1.png" alt="Imagem do passo 6" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 7 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 7: Ir para a Seção de Motoristas</h3> 
+ 					<p class="mb-3">Navegue para a seção 'Acompanhamento de Entrega - Motorista' clicando na seta indicada.</p> 
+ 					<img src="https://i.postimg.cc/Y2dfLBTM/7.png" alt="Imagem do passo 7" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 8 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 8: Filtrar Status do Documento</h3> 
+ 					<p class="mb-3">No novo painel, filtre o 'Status Doc.' para 'Em Trânsito'.</p> 
+ 					<img src="https://i.postimg.cc/Gmykf8tm/8.png" alt="Imagem do passo 8" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 9 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 9: Filtrar Situação para "Vencendo Hoje"</h3> 
+ 					<p class="mb-3">Em seguida, filtre a 'Situação Doc.' para 'Vencendo Hoje'.</p> 
+ 					<img src="https://i.postimg.cc/Xv6w6jBc/9.png" alt="Imagem do passo 9" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 10 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 10: Tirar o Terceiro Print</h3> 
+ 					<p class="mb-3">Com os filtros aplicados, tire o <strong>terceiro print (Print 3)</strong> da tela para o Card 3.</p> 
+ 					<img src="https://i.postimg.cc/g0y3YCv9/10.png" alt="Imagem do passo 10" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 11 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 11: Mudar Situação para "Em Atraso"</h3> 
+ 					<p class="mb-3">Mantenha os outros filtros e altere apenas a 'Situação Doc.' para 'Em Aberto em Atraso'.</p> 
+ 					<img src="https://i.postimg.cc/FR931TZY/11.png" alt="Imagem do passo 11" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 				<!-- Passo 12 --> 
+ 				<div class="step"> 
+ 					<h3 class="font-bold text-lg mb-2">Passo 12: Tirar o Quarto Print</h3> 
+ 					<p class="mb-3">Para finalizar, tire o <strong>quarto print (Print 4)</strong> desta última tela para o Card 4 (opcional).</p> 
+ 					<img src="https://i.postimg.cc/3RnpG2Sn/12.png" alt="Imagem do passo 12" class="rounded-lg border shadow-sm w-full max-w-md"> 
+ 				</div> 
+ 			</div> 
+ 		</div> 
+ 	</div> 
+
+
+ 	<script type="module"> 
+ 		// Armazenamento dos dados das imagens em base64 
+ 		const uploadedImages = { 1: null, 2: null, 3: null, 4: null, 5: null }; 
+ 		let justificativas = {}; 
+ 		let attentionPoints = {}; 
+ 		let selectedCardIndex = null; // Rastreia o card selecionado 
+ 		let lastReportData = null; // Armazena os dados do último relatório gerado 
+
+ 		// --- Referências aos Elementos do DOM --- 
+ 		const elements = { 
+ 			loginScreen: document.getElementById('login-screen'), 
+ 			appContent: document.getElementById('app-content'), 
+ 			pinInput: document.getElementById('pin-input'), 
+ 			loginBtn: document.getElementById('login-btn'), 
+ 			loginError: document.getElementById('login-error'), 
+ 			loginSpinner: document.getElementById('login-spinner'), 
+ 			loginBtnText: document.getElementById('login-btn-text'), 
+ 			gerarBtn: document.getElementById('gerar-relatorio-btn'), 
+ 			btnText: document.getElementById('btn-text'), 
+ 			spinner: document.getElementById('spinner'), 
+ 			filialNome: document.getElementById('filial-nome'), 
+ 			resultadoSecao: document.getElementById('resultado-secao'), 
+ 			resultadoTexto: document.getElementById('resultado-texto'), 
+ 			copyBtn: document.getElementById('copy-btn'), 
+ 			copyBtnText: document.getElementById('copy-btn-text'), 
+ 			copyWithImagesCheckbox: document.getElementById('copy-with-images-checkbox'), 
+ 			justificativasSecao: document.getElementById('justificativas-secao'), 
+ 			justificativasContainer: document.getElementById('justificativas-container'), 
+ 			atualizarRelatorioBtn: document.getElementById('atualizar-relatorio-btn'), 
+ 			pontosAtencaoSecao: document.getElementById('pontos-atencao-secao'), 
+ 			pontosAtencaoContainer: document.getElementById('pontos-atencao-container'), 
+ 			adicionarPontosBtn: document.getElementById('adicionar-pontos-btn'), 
+ 			errorMessage: document.getElementById('error-message'), 
+ 			errorText: document.getElementById('error-text'), 
+ 			uploadCards: [ 
+ 				document.getElementById('upload-card-1'), 
+ 				document.getElementById('upload-card-2'), 
+ 				document.getElementById('upload-card-3'), 
+ 				document.getElementById('upload-card-4'), 
+ 				document.getElementById('upload-card-5') 
+ 			], 
+ 			tutorialBtn: document.getElementById('tutorial-btn'), 
+ 			tutorialModalOverlay: document.getElementById('tutorial-modal-overlay'), 
+ 			closeTutorialBtn: document.getElementById('close-tutorial-btn') 
+ 		}; 
+
+ 		// --- Funções de UI --- 
+ 		function showLoading(isLoading) { 
+ 			elements.gerarBtn.disabled = isLoading; 
+ 			elements.spinner.classList.toggle('hidden', !isLoading); 
+ 			elements.btnText.textContent = isLoading ? 'Analisando...' : 'Analisar Imagens e Gerar Relatório'; 
+ 		} 
+ 		 
+ 		function showError(message) { 
+ 			elements.errorText.textContent = message; 
+ 			elements.errorMessage.classList.remove('hidden'); 
+ 		} 
+
+ 		function hideError() { 
+ 			elements.errorMessage.classList.add('hidden'); 
+ 		} 
+
+ 		function handleFile(file, boxNumber) { 
+ 			if (!file || !file.type.startsWith('image/')) { 
+ 				showError(`Arquivo inválido no card ${boxNumber}. Por favor, selecione uma imagem.`); 
+ 				return; 
+ 			} 
+ 			hideError(); 
+
+ 			const reader = new FileReader(); 
+ 			reader.onload = (e) => { 
+ 				const preview = document.getElementById(`preview-${boxNumber}`); 
+ 				const placeholder = document.getElementById(`placeholder-${boxNumber}`); 
+ 				 
+ 				preview.src = e.target.result; 
+ 				preview.classList.remove('hidden'); 
+ 				placeholder.classList.add('hidden'); 
+ 				uploadedImages[boxNumber] = e.target.result.split(',')[1]; 
+ 			}; 
+ 			reader.readAsDataURL(file); 
+ 		} 
+ 		 
+ 		function selectCard(index) { 
+ 			selectedCardIndex = index; 
+ 			elements.uploadCards.forEach((card, i) => { 
+ 				card.classList.toggle('selected', i + 1 === index); 
+ 			}); 
+ 		} 
+ 		 
+ 		function checkPin() { 
+ 			const correctPin = '311215'; 
+ 			if (elements.pinInput.value === correctPin) { 
+ 				elements.loginBtn.disabled = true; 
+ 				elements.loginSpinner.classList.remove('hidden'); 
+ 				elements.loginBtnText.classList.add('hidden'); 
+ 				 
+ 				setTimeout(() => { 
+ 					elements.loginScreen.classList.add('hidden'); 
+ 					elements.appContent.classList.remove('hidden'); 
+ 					setupEventListeners(); 
+ 				}, 1000); 
+ 			} else { 
+ 				elements.loginError.classList.remove('hidden'); 
+ 				elements.pinInput.classList.add('shake'); 
+ 				elements.pinInput.value = ''; 
+ 				setTimeout(() => { 
+ 					elements.pinInput.classList.remove('shake'); 
+ 				}, 500); 
+ 			} 
+ 		} 
+
+ 		// --- Configuração dos Event Listeners --- 
+ 		function setupLoginListeners() { 
+ 			elements.loginBtn.addEventListener('click', checkPin); 
+ 			elements.pinInput.addEventListener('keyup', (e) => { 
+ 				if (e.key === 'Enter') { 
+ 					checkPin(); 
+ 				} 
+ 			}); 
+ 		} 
+
+ 		function setupEventListeners() { 
+ 			elements.uploadCards.forEach((card, index) => { 
+ 				const boxNumber = index + 1; 
+ 				const button = document.getElementById(`button-${boxNumber}`); 
+ 				const fileInput = document.getElementById(`file-input-${boxNumber}`); 
+ 				const previewBox = document.getElementById(`preview-box-${boxNumber}`); 
+
+ 				card.addEventListener('click', () => selectCard(boxNumber)); 
+ 				 
+ 				button.addEventListener('click', (e) => { 
+ 					e.stopPropagation(); 
+ 					fileInput.click(); 
+ 				}); 
+
+ 				fileInput.addEventListener('change', (e) => handleFile(e.target.files[0], boxNumber)); 
+
+ 				card.addEventListener('dragover', (e) => { 
+ 					e.preventDefault(); 
+ 					previewBox.classList.add('dragover'); 
+ 				}); 
+ 				card.addEventListener('dragleave', () => previewBox.classList.remove('dragleave')); 
+ 				card.addEventListener('drop', (e) => { 
+ 					e.preventDefault(); 
+ 					previewBox.classList.remove('dragover'); 
+ 					if (e.dataTransfer.files.length) { 
+ 						handleFile(e.dataTransfer.files[0], boxNumber); 
+ 					} 
+ 				}); 
+ 			}); 
+ 			 
+ 			document.addEventListener('paste', (e) => { 
+ 				if (document.activeElement.tagName === 'TEXTAREA') { 
+ 					return; // Permite o paste padrão em textareas 
+ 				} 
+ 				if (selectedCardIndex === null) return; 
+ 				 
+ 				e.preventDefault(); 
+ 				const items = (e.clipboardData || window.clipboardData).items; 
+ 				for (const item of items) { 
+ 					if (item.type.indexOf('image') !== -1) { 
+ 						const blob = item.getAsFile(); 
+ 						handleFile(blob, selectedCardIndex); 
+ 						break; 
+ 					} 
+ 				} 
+ 			}); 
+ 			 
+ 			elements.gerarBtn.addEventListener('click', generateReport); 
+ 			elements.copyBtn.addEventListener('click', copyToClipboard); 
+ 			elements.atualizarRelatorioBtn.addEventListener('click', updateReportWithJustifications); 
+ 			elements.adicionarPontosBtn.addEventListener('click', addAttentionPointsToReport); 
+
+ 			// Listeners do Modal de Tutorial 
+ 			elements.tutorialBtn.addEventListener('click', () => { 
+ 				elements.tutorialModalOverlay.classList.remove('hidden'); 
+ 			}); 
+ 			elements.closeTutorialBtn.addEventListener('click', () => { 
+ 				elements.tutorialModalOverlay.classList.add('hidden'); 
+ 			}); 
+ 			elements.tutorialModalOverlay.addEventListener('click', (e) => { 
+ 				if (e.target === elements.tutorialModalOverlay) { 
+ 					elements.tutorialModalOverlay.classList.add('hidden'); 
+ 				} 
+ 			}); 
+ 		} 
+
+ 		// --- Lógica Principal (Geração do Relatório) --- 
+ 		async function generateReport() { 
+ 			hideError(); 
+ 			if (!uploadedImages[1] || !uploadedImages[2] || !uploadedImages[3] || !uploadedImages[4]) { 
+ 				showError('Por favor, adicione as imagens para "Visão Geral", "Destaques Remetente", "Documentos em Atraso" e "Motoristas (Venc. Hoje)".'); 
+ 				return; 
+ 			} 
+ 			if (!elements.filialNome.value.trim()) { 
+ 				showError('Por favor, preencha o nome da Filial/Cidade.'); 
+ 				return; 
+ 			} 
+
+ 			showLoading(true); 
+ 			elements.resultadoSecao.classList.add('hidden'); 
+ 			elements.justificativasSecao.classList.add('hidden'); 
+ 			elements.pontosAtencaoSecao.classList.add('hidden'); 
+ 			justificativas = {}; 
+ 			attentionPoints = {}; 
+
+ 			const prompt = ` 
+ 				Você é um assistente de logística ultrapreciso. Sua única tarefa é analisar as imagens fornecidas e extrair os dados solicitados, retornando-os ESTRITAMENTE no formato JSON. 
+ 				**Fontes de Dados (Imagens):** 1. 	**Imagem 1 (Visão Geral):** Use para os totais gerais e destaques da cidade. 
+ 				2. 	**Imagem 2 (Tabela de Remetentes):** Use para obter o total de documentos por remetente. 
+ 				3. 	**Imagem 3 (Tabela de Documentos em Atraso):** FONTE PRINCIPAL para os detalhes dos documentos em atraso. 
+ 				4. 	**Imagem 4 (Motoristas Vencendo Hoje):** Fonte para a lista de motoristas com entregas vencendo hoje. 
+ 				5. 	**Imagem 5 (Motoristas em Atraso):** Fonte para a lista de motoristas com entregas em atraso (se existir). 
+ 				**Formato JSON de Saída (Siga EXATAMENTE):** { 
+ 					"visaoGeral": { "totalEmTransito": 0, "vencendoHoje": { "quantidade": 0, "percentual": 0 }, "emAtraso": { "quantidade": 0, "percentual": 0 } }, 
+ 					"destaquesRemetentes": [ { "nome": "NOME DO REMETENTE 1", "emAtraso": 0, "noPrazo": 0, "vencendoHoje": 0 } ], 
+ 					"documentosEmAtraso": [ { "remetente": "NOME DO REMETENTE", "documento": "12345" } ], 
+ 					"destaquesCidades": [ { "nome": "NOME DA CIDADE 1", "totalDocumentos": 0 } ], 
+ 					"motoristasVencendoHoje": [ { "nome": "NOME DO MOTORISTA 1", "totalDocumentos": 0 } ], 
+ 					"motoristasEmAtraso": [ { "nome": "NOME DO MOTORISTA 1", "totalDocumentos": 0 } ] 
+ 				} 
+ 			`; 
+
+ 			try { 
+ 				const parts = [ 
+ 					{ text: prompt }, 
+ 					{ inlineData: { mimeType: "image/jpeg", data: uploadedImages[1] } }, 
+ 					{ inlineData: { mimeType: "image/jpeg", data: uploadedImages[2] } }, 
+ 					{ inlineData: { mimeType: "image/jpeg", data: uploadedImages[3] } }, 
+ 					{ inlineData: { mimeType: "image/jpeg", data: uploadedImages[4] } }, 
+ 				]; 
+ 			 
+ 				if (uploadedImages[5]) { 
+ 					parts.push({ inlineData: { mimeType: "image/jpeg", data: uploadedImages[5] } }); 
+ 				} 
+ 				 
+ 				const payload = { contents: [{ parts }] }; 
+ 				const apiKey = "AIzaSyADKvn2elMCLwpyJu9IBEj-PjxxcAfmVnk";  
+ 				const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`; 
+
+ 				const response = await fetch(apiUrl, { 
+ 					method: 'POST', 
+ 					headers: { 'Content-Type': 'application/json' }, 
+ 					body: JSON.stringify(payload) 
+ 				}); 
+
+ 				if (!response.ok) { 
+ 					const errorBody = await response.text(); 
+ 					throw new Error(`Erro na API: ${response.status} ${response.statusText}. Detalhes: ${errorBody}`); 
+ 				} 
+
+ 				const result = await response.json(); 
+ 				 
+ 				if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) { 
+ 					const rawText = result.candidates[0].content.parts[0].text; 
+ 					const startIndex = rawText.indexOf('{'); 
+ 					const endIndex = rawText.lastIndexOf('}'); 
+
+ 					if (startIndex === -1 || endIndex === -1) { 
+ 						console.error("Nenhum JSON válido encontrado na resposta:", rawText); 
+ 						throw new Error("A API não retornou um objeto JSON reconhecível."); 
+ 					} 
+
+ 					const jsonText = rawText.substring(startIndex, endIndex + 1); 
+ 					 
+ 					try { 
+ 						const reportData = JSON.parse(jsonText); 
+ 						lastReportData = reportData; 
+ 						displayReport(reportData); 
+ 					} catch (parseError) { 
+ 						console.error("Erro ao fazer o parse do JSON:", parseError, "\nJSON Recebido:", jsonText); 
+ 						throw new Error(`A IA retornou um formato JSON inválido. Detalhes: ${parseError.message}`); 
+ 					} 
+
+ 				} else { 
+ 					 console.error("Resposta da API inválida:", result); 
+ 					throw new Error("A API não retornou um resultado válido."); 
+ 				} 
+
+ 			} catch (error) { 
+ 				console.error("Erro ao gerar relatório:", error); 
+ 				showError(`Ocorreu um erro ao processar a resposta da IA. Verifique o console. Erro: ${error.message}`); 
+ 			} finally { 
+ 				showLoading(false); 
+ 			} 
+ 		} 
+ 		 
+ 		// --- FUNÇÕES DE FORMATAÇÃO E EXIBIÇÃO --- 
+
+ 		function formatReport(reportData, includeJustifications = true, includeAttentionPoints = true) { 
+ 			const today = new Date(); 
+ 			const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); 
+ 			const filialNome = elements.filialNome.value.trim(); 
+ 			let reportText = `Bom dia!\n`; 
+ 			reportText += `Senhores, segue o acompanhamento da operação Last Mile da filial ${filialNome} com base nos dados atualizados em ${formattedDate}.\n\n`; 
+ 			reportText += `📦 *Visão Geral da Operação*\n`; 
+ 			reportText += `- Total de Documentos em Trânsito: ${reportData.visaoGeral.totalEmTransito}\n`; 
+ 			reportText += `- ${reportData.visaoGeral.vencendoHoje.quantidade} docs (${reportData.visaoGeral.vencendoHoje.percentual}%) com vencimento hoje.\n`; 
+ 			reportText += `- ${reportData.visaoGeral.emAtraso.quantidade} docs (${reportData.visaoGeral.emAtraso.percentual}%) estão em atraso.\n\n`; 
+ 			if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) { 
+ 				reportText += `📊 *Destaques por Remetente*\n`; 
+ 				reportData.destaquesRemetentes.slice(0, 4).forEach(r => { 
+ 					if(r.nome) { 
+ 						const totalEmTransito = (r.emAtraso || 0) + (r.noPrazo || 0) + (r.vencendoHoje || 0); 
+ 						let line = `- ${r.nome}: ${totalEmTransito} docs em trânsito`; 
+ 						let details = []; 
+ 						if (r.vencendoHoje > 0) details.push(`${r.vencendoHoje} Vencendo hoje`); 
+ 						if (r.emAtraso > 0) details.push(`${r.emAtraso} em atraso`); 
+ 						if (details.length > 0) line += ` (${details.join(', ')})`; 
+ 						reportText += line + '\n'; 
+ 					} 
+ 				}); 
+ 				reportText += `\n`; 
+ 			} 
+ 			if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) { 
+ 				reportText += `🚚 *Top motoristas com maior volume vencendo hoje:*\n`; 
+ 				 reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => { 
+ 					if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} docs\n`; 
+ 				}); 
+ 				reportText += `\n`; 
+ 			} 
+ 			if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) { 
+ 				reportText += `🚩 *Top motoristas com entregas em atraso:*\n`; 
+ 				reportData.motoristasEmAtraso.slice(0, 5).forEach(m => { 
+ 					if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} docs\n`; 
+ 				}); 
+ 			} 
+
+ 			if (includeJustifications) { 
+ 				const justificationsText = Object.entries(justificativas) 
+ 					.filter(([_, text]) => text.trim() !== "") 
+ 					.map(([docId, justificationText]) => { 
+ 						const docInfo = lastReportData.documentosEmAtraso.find(d => d.documento === docId); 
+ 						const remetente = docInfo ? docInfo.remetente : 'Remetente não encontrado'; 
+ 						return `- DOCTO: ${docId} - ${remetente}: ${justificationText}`; 
+ 					}) 
+ 					.join("\n"); 
+ 				if (justificationsText) { 
+ 					reportText += `\n\n🚩 *Justificativas dos Remetentes em Atraso*\n${justificationsText}`; 
+ 				} 
+ 			} 
+
+ 			if (includeAttentionPoints) { 
+ 				const attentionText = Object.values(attentionPoints) 
+ 					.filter(text => text.trim() !== "") 
+ 					.map(text => `- ${text}`) 
+ 					.join("\n"); 
+ 				if (attentionText) { 
+ 					reportText += `\n\n🚩 *Pontos de Atenção*\n${attentionText}`; 
+ 				} 
+ 			} 
+
+ 			return reportText.trim(); 
+ 		} 
+ 		 
+ 		function formatRichReportHTML(reportData) { 
+ 			const today = new Date(); 
+ 			const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); 
+ 			const filialNome = elements.filialNome.value.trim(); 
+ 			const tableStyle = 'width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px;'; 
+ 			const thStyle = 'border: 1px solid #dddddd; text-align: left; padding: 8px; background-color: #f2f2f2; font-weight: bold;'; 
+ 			const tdStyle = 'border: 1px solid #dddddd; text-align: left; padding: 8px;'; 
+ 			const headerTdStyle = 'padding: 8px; vertical-align: middle;'; 
+ 			// MODIFICADO: Aumentada a largura máxima do container do relatório (1200px -> 1800px)
+ 			let html = `<div style="font-family: sans-serif; font-size: 14px; color: #000; max-width: 1800px; margin: 0 auto;">`; 
+ 			html += `<table style="width: 100%; margin-bottom: 10px;"><tr>`; 
+ 			// MODIFICADO: Imagem 15% menor (width: 120px -> 102px)
+ 			html += `<td style="${headerTdStyle} width: 102px;"><img src="https://i.postimg.cc/qRsRfTfS/Sem-nome-1000-x-1000-px-3.png" alt="Logo" style="width: 102px;"></td>`; 
+ 			html += `<td style="${headerTdStyle} text-align: center;">`; 
+ 			html += `<h2 style="margin: 0; font-size: 32px; font-weight: bold; color: #B91C1C;">Acompanhamento Diário de Entregas</h2>`; 
+ 			html += `<p style="margin: 10px 0 0; font-size: 18px; color: #333;"><strong>Filial:</strong> ${filialNome} &nbsp;|&nbsp; <strong>Data:</strong> ${formattedDate}</p>`; 
+ 			html += `</td></tr></table>`; 
+ 			html += `<img src="https://i.postimg.cc/R0vp11St/Sem-nome-1000-x-1000-px-5.png" alt="Separador" style="width: 100%; height: auto; display: block; margin-bottom: 20px;">`; 
+ 			html += `<p style="font-size: 16px; font-weight: bold; margin-top: 20px;">📦 Visão Geral da Operação</p>`; 
+ 			html += `<table style="${tableStyle}">`; 
+ 			html += `<thead><tr><th style="${thStyle}">Indicador</th><th style="${thStyle}">Quantidade</th><th style="${thStyle}">Percentual</th></tr></thead>`; 
+ 			html += `<tbody>`; 
+ 			html += `<tr><td style="${tdStyle}">Total de Documentos em Trânsito</td><td style="${tdStyle}">${reportData.visaoGeral.totalEmTransito}</td><td style="${tdStyle}">-</td></tr>`; 
+ 			html += `<tr><td style="${tdStyle}">Vencendo Hoje</td><td style="${tdStyle}">${reportData.visaoGeral.vencendoHoje.quantidade}</td><td style="${tdStyle}">${reportData.visaoGeral.vencendoHoje.percentual}%</td></tr>`; 
+ 			html += `<tr><td style="${tdStyle}">Em Atraso</td><td style="${tdStyle}">${reportData.visaoGeral.emAtraso.quantidade}</td><td style="${tdStyle}">${reportData.visaoGeral.emAtraso.percentual}%</td></tr>`; 
+ 			html += `</tbody></table>`; 
+ 			if (uploadedImages[1]) { 
+ 				html += `<img src="data:image/jpeg;base64,${uploadedImages[1]}" alt="Gráfico Visão Geral" style="max-width: 50%; height: auto; display: block; margin-top: 10px; margin-bottom: 20px;" />`; 
+ 			} 
+ 			if (reportData.destaquesRemetentes && reportData.destaquesRemetentes.length > 0) { 
+ 				html += `<p style="font-size: 16px; font-weight: bold;">📊 Destaques por Remetente</p>`; 
+ 				html += `<table style="${tableStyle}">`; 
+ 				html += `<thead><tr><th style="${thStyle}">Remetente</th><th style="${thStyle}">Vencendo Hoje</th><th style="${thStyle}">Em Atraso</th><th style="${thStyle}">Total em Trânsito</th></tr></thead>`; 
+ 				html += `<tbody>`; 
+ 				reportData.destaquesRemetentes.slice(0, 4).forEach(r => { 
+ 					if (r.nome) { 
+ 						const totalEmTransito = (r.emAtraso || 0) + (r.noPrazo || 0) + (r.vencendoHoje || 0); 
+ 						html += `<tr><td style="${tdStyle}">${r.nome}</td><td style="${tdStyle}">${r.vencendoHoje || 0}</td><td style="${tdStyle}">${r.emAtraso || 0}</td><td style="${tdStyle}">${totalEmTransito}</td></tr>`; 
+ 					} 
+ 				}); 
+ 				html += `</tbody></table>`; 
+ 			} 
+ 			if (reportData.motoristasVencendoHoje && reportData.motoristasVencendoHoje.length > 0) { 
+ 				html += `<p style="font-size: 16px; font-weight: bold;">🚚 Top motoristas com maior volume vencendo hoje:</p>`; 
+ 				html += `<table style="${tableStyle}">`; 
+ 				html += `<thead><tr><th style="${thStyle}">Motorista</th><th style="${thStyle}">Total de Documentos</th></tr></thead>`; 
+ 				html += `<tbody>`; 
+ 				reportData.motoristasVencendoHoje.slice(0, 5).forEach(m => { 
+ 					if (m.nome) { 
+ 						html += `<tr><td style="${tdStyle}">${m.nome}</td><td style="${tdStyle}">${m.totalDocumentos}</td></tr>`; 
+ 					} 
+ 				}); 
+ 				html += `</tbody></table>`; 
+ 			} 
+ 			 if (uploadedImages[4]) { 
+ 				html += `<img src="data:image/jpeg;base64,${uploadedImages[4]}" alt="Motoristas Vencendo Hoje" style="max-width: 50%; height: auto; display: block; margin-top: 10px; margin-bottom: 20px;" />`; 
+ 			} 
+ 			if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) { 
+ 				html += `<p style="font-size: 16px; font-weight: bold;">🚩 Top motoristas com entregas em atraso:</p>`; 
+ 				html += `<table style="${tableStyle}">`; 
+ 				html += `<thead><tr><th style="${thStyle}">Motorista</th><th style="${thStyle}">Total de Documentos</th></tr></thead>`; 
+ 				html += `<tbody>`; 
+ 				reportData.motoristasEmAtraso.slice(0, 5).forEach(m => { 
+ 					if (m.nome) { 
+ 						html += `<tr><td style="${tdStyle}">${m.nome}</td><td style="${tdStyle}">${m.totalDocumentos}</td></tr>`; 
+ 					} 
+ 				}); 
+ 				html += `</tbody></table>`; 
+ 			} 
+ 			const hasJustifications = Object.values(justificativas).some(text => text.trim() !== ""); 
+ 			if (hasJustifications) { 
+ 				html += `<p style="font-size: 16px; font-weight: bold;">🚩 Justificativas dos Remetentes em Atraso</p>`; 
+ 				html += `<table style="${tableStyle}">`; 
+ 				html += `<thead><tr><th style="${thStyle}">Documento</th><th style="${thStyle}">Remetente</th><th style="${thStyle}">Justificativa</th></tr></thead>`; 
+ 				html += `<tbody>`; 
+ 				Object.entries(justificativas).forEach(([docId, justificationText]) => { 
+ 					if (justificationText.trim() !== "") { 
+ 						const docInfo = lastReportData.documentosEmAtraso.find(d => d.documento === docId); 
+ 						const remetente = docInfo ? docInfo.remetente : 'Não encontrado'; 
+ 						html += `<tr><td style="${tdStyle}">${docId}</td><td style="${tdStyle}">${remetente}</td><td style="${tdStyle}">${justificationText.replace(/\n/g, '<br>')}</td></tr>`; 
+ 					} 
+ 				}); 
+ 				html += `</tbody></table>`; 
+ 			} 
+ 			if (uploadedImages[5]) { 
+ 				 html += `<img src="data:image/jpeg;base64,${uploadedImages[5]}" alt="Motoristas em Atraso" style="max-width: 50%; height: auto; display: block; margin-top: 10px; margin-bottom: 10px;" />`; 
+ 			} 
+ 			 
+ 			const hasAttentionPoints = Object.values(attentionPoints).some(text => text.trim() !== ""); 
+ 			if (hasAttentionPoints) { 
+ 				html += `<p style="font-size: 16px; font-weight: bold;">🚩 Pontos de Atenção</p>`; 
+ 				html += `<table style="${tableStyle}">`; 
+ 				html += `<thead><tr><th style="${thStyle}">Descrição</th></tr></thead>`; 
+ 				html += `<tbody>`; 
+ 				Object.values(attentionPoints).forEach(text => { 
+ 					if (text.trim() !== "") { 
+ 						html += `<tr><td style="${tdStyle}">${text.replace(/\n/g, '<br>')}</td></tr>`; 
+ 					} 
+ 				}); 
+ 				html += `</tbody></table>`; 
+ 			} 
+
+ 			html += '</div>'; 
+ 			return html; 
+ 		} 
+
+ 		function displayReport(reportData) { 
+ 			const reportText = formatReport(reportData, false, false); 
+ 			elements.resultadoTexto.textContent = reportText; 
+ 			elements.resultadoSecao.classList.remove('hidden'); 
+ 			window.scrollTo(0, document.body.scrollHeight); 
+ 			 
+ 			if (reportData.documentosEmAtraso && reportData.documentosEmAtraso.length > 0) { 
+ 				setupJustificativas(reportData.documentosEmAtraso); 
+ 			} 
+ 			setupAttentionPoints(); 
+ 		} 
+ 		 
+ 		function setupJustificativas(lateDocs) { 
+ 			elements.justificativasContainer.innerHTML = ''; 
+ 			 
+ 			const existingExpandBtn = document.getElementById('expand-justifications-btn'); 
+ 			if (existingExpandBtn) { 
+ 				existingExpandBtn.remove(); 
+ 			} 
+
+ 			lateDocs.forEach((doc, index) => { 
+ 				const labelText = `DOCTO: ${doc.documento} - ${doc.remetente}`; 
+ 				const div = document.createElement('div'); 
+ 				div.className = 'mb-3 justification-field'; 
+ 				if (index >= 5) { 
+ 					div.classList.add('hidden'); 
+ 				} 
+ 				const label = document.createElement('label'); 
+ 				label.className = 'block mb-1 font-medium text-gray-700 text-sm'; 
+ 				label.textContent = labelText; 
+ 				const textarea = document.createElement('textarea'); 
+ 				textarea.className = 'w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-orange-500 focus:outline-none'; 
+ 				textarea.placeholder = `Adicionar justificativa para o documento ${doc.documento}...`; 
+ 				textarea.rows = 2; 
+ 				textarea.dataset.docId = doc.documento; 
+ 				textarea.addEventListener('input', (e) => { 
+ 					justificativas[e.target.dataset.docId] = e.target.value; 
+ 				}); 
+ 				textarea.addEventListener('paste', (e) => { 
+ 					e.stopPropagation(); 
+ 				}); 
+ 				div.appendChild(label); 
+ 				div.appendChild(textarea); 
+ 				elements.justificativasContainer.appendChild(div); 
+ 			}); 
+
+ 			if (lateDocs.length > 5) { 
+ 				const expandBtn = document.createElement('button'); 
+ 				expandBtn.id = 'expand-justifications-btn'; 
+ 				expandBtn.textContent = `Mostrar todos os ${lateDocs.length} campos...`; 
+ 				expandBtn.className = 'bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-1 px-3 text-sm rounded-lg shadow-sm transition-all mx-auto block mt-4'; 
+ 				expandBtn.addEventListener('click', () => { 
+ 					document.querySelectorAll('.justification-field.hidden').forEach(field => { 
+ 						field.classList.remove('hidden'); 
+ 					}); 
+ 					expandBtn.style.display = 'none'; 
+ 				}); 
+ 				elements.atualizarRelatorioBtn.before(expandBtn); 
+ 			} 
+
+ 			elements.justificativasSecao.classList.remove('hidden'); 
+ 		} 
+
+ 		function setupAttentionPoints() { 
+ 			elements.pontosAtencaoContainer.innerHTML = ''; 
+ 			attentionPoints = {}; // Reset points 
+
+ 			for (let i = 0; i < 5; i++) { 
+ 				const div = document.createElement('div'); 
+ 				div.className = 'mb-3'; 
+ 				const label = document.createElement('label'); 
+ 				label.className = 'block mb-1 font-medium text-gray-700 text-sm'; 
+ 				label.textContent = `Ponto de Atenção ${i + 1}`; 
+ 				const textarea = document.createElement('textarea'); 
+ 				textarea.className = 'w-full bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none'; 
+ 				textarea.placeholder = `Adicionar ponto de atenção...`; 
+ 				textarea.rows = 2; 
+ 				textarea.dataset.id = i; 
+ 				textarea.addEventListener('input', (e) => { 
+ 					attentionPoints[e.target.dataset.id] = e.target.value; 
+ 				}); 
+ 				textarea.addEventListener('paste', (e) => { 
+ 					e.stopPropagation(); 
+ 				}); 
+ 				div.appendChild(label); 
+ 				div.appendChild(textarea); 
+ 				elements.pontosAtencaoContainer.appendChild(div); 
+ 			} 
+ 			elements.pontosAtencaoSecao.classList.remove('hidden'); 
+ 		} 
+
+ 		function updateReportWithJustifications() { 
+ 			const newText = formatReport(lastReportData, true, false); 
+ 			elements.resultadoTexto.textContent = newText; 
+ 			elements.justificativasSecao.classList.add('hidden'); 
+ 			elements.copyBtn.focus(); 
+ 		} 
+
+ 		function addAttentionPointsToReport() { 
+ 			const newText = formatReport(lastReportData, true, true); 
+ 			elements.resultadoTexto.textContent = newText; 
+ 			elements.pontosAtencaoSecao.classList.add('hidden'); 
+ 			elements.copyBtn.focus(); 
+ 		} 
+
+ 		function copyToClipboard() { 
+ 			const isRichText = elements.copyWithImagesCheckbox.checked; 
+ 			const showSuccess = () => { 
+ 				const originalText = elements.copyBtnText.textContent; 
+ 				elements.copyBtn.classList.add('copied'); 
+ 				elements.copyBtnText.textContent = 'Copiado!'; 
+ 				setTimeout(() => { 
+ 					elements.copyBtn.classList.remove('copied'); 
+ 					elements.copyBtnText.textContent = originalText; 
+ 				}, 2000); 
+ 			}; 
+ 			 
+ 			try { 
+ 				let contentToCopy; 
+ 				if (isRichText) { 
+ 					if (!lastReportData) { 
+ 						showError("Gere um relatório primeiro para copiar com imagens."); 
+ 						return; 
+ 					} 
+ 					contentToCopy = formatRichReportHTML(lastReportData); 
+ 					const tempDiv = document.createElement('div'); 
+ 					tempDiv.style.position = 'absolute'; 
+ 					tempDiv.style.left = '-9999px'; 
+ 					tempDiv.innerHTML = contentToCopy; 
+ 					document.body.appendChild(tempDiv); 
+ 					const range = document.createRange(); 
+ 					range.selectNodeContents(tempDiv); 
+ 					const selection = window.getSelection(); 
+ 					selection.removeAllRanges(); 
+ 					selection.addRange(range); 
+ 					const successful = document.execCommand('copy'); 
+ 					selection.removeAllRanges(); 
+ 					document.body.removeChild(tempDiv); 
+ 					if (!successful) throw new Error('document.execCommand falhou para conteúdo rico.'); 
+ 				} else { 
+ 					contentToCopy = elements.resultadoTexto.textContent; 
+ 					const textArea = document.createElement("textarea"); 
+ 					textArea.value = contentToCopy; 
+ 					textArea.style.position = "absolute"; 
+ 					textArea.style.left = "-9999px"; 
+ 					document.body.appendChild(textArea); 
+ 					textArea.select(); 
+ 					const successful = document.execCommand('copy'); 
+ 					document.body.removeChild(textArea); 
+ 					if (!successful) throw new Error('document.execCommand falhou para texto simples.'); 
+ 				} 
+ 				showSuccess(); 
+ 			} catch (err) { 
+ 				console.error('Erro ao copiar conteúdo: ', err); 
+ 				showError("Não foi possível copiar. Por favor, copie manualmente."); 
+ 			} 
+ 		} 
+
+ 		document.addEventListener('DOMContentLoaded', setupLoginListeners); 
+ 	</script> 
+ </body> 
+ </html>
