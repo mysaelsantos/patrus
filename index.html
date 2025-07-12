@@ -644,7 +644,7 @@
  			const filialNome = elements.filialNome.value.trim(); 
  			let reportText = `Bom dia!\n`; 
  			reportText += `Senhores, segue o acompanhamento da operação Last Mile da filial ${filialNome} com base nos dados atualizados em ${formattedDate}.\n\n`; 
- 			reportText += `📦 *Visão Geral da Operação*\n`; 
+ 			reportText += `📦 *Visão Geral da Operação ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ*\n`; 
  			reportText += `- Total de Documentos em Trânsito: ${reportData.visaoGeral.totalEmTransito}\n`; 
  			reportText += `- ${reportData.visaoGeral.vencendoHoje.quantidade} docs (${reportData.visaoGeral.vencendoHoje.percentual}%) com vencimento hoje.\n`; 
  			reportText += `- ${reportData.visaoGeral.emAtraso.quantidade} docs (${reportData.visaoGeral.emAtraso.percentual}%) estão em atraso.\n\n`; 
@@ -671,7 +671,7 @@
  				reportText += `\n`; 
  			} 
  			if (reportData.motoristasEmAtraso && reportData.motoristasEmAtraso.length > 0) { 
- 				reportText += `🚩 *Top motoristas com entregas em atraso:*\n`; 
+ 				reportText += `� *Top motoristas com entregas em atraso:*\n`; 
  				reportData.motoristasEmAtraso.slice(0, 5).forEach(m => { 
  					if(m.nome) reportText += `- ${m.nome}: ${m.totalDocumentos} docs\n`; 
  				}); 
@@ -722,7 +722,7 @@
  			html += `<p style="margin: 10px 0 0; font-size: 18px; color: #333;"><strong>Filial:</strong> ${filialNome} &nbsp;|&nbsp; <strong>Data:</strong> ${formattedDate}</p>`; 
  			html += `</td></tr></table>`; 
  			html += `<img src="https://i.postimg.cc/R0vp11St/Sem-nome-1000-x-1000-px-5.png" alt="Separador" style="width: 100%; height: auto; display: block; margin-bottom: 20px;">`; 
- 			html += `<p style="font-size: 16px; font-weight: bold; margin-top: 20px;">📦 Visão Geral da Operação</p>`; 
+ 			html += `<p style="font-size: 16px; font-weight: bold; margin-top: 20px;">📦 Visão Geral da Operação ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ</p>`; 
  			html += `<table style="${tableStyle}">`; 
  			html += `<thead><tr><th style="${thStyle}">Indicador</th><th style="${thStyle}">Quantidade</th><th style="${thStyle}">Percentual</th></tr></thead>`; 
  			html += `<tbody>`; 
@@ -972,3 +972,4 @@
  	</script> 
  </body> 
  </html>
+�
