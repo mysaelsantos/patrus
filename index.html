@@ -38,7 +38,7 @@
  			object-fit: contain; 
  		} 
  		/* Estilo para o botão de copiar */ 
- 		#copy-btn.copied { 
+ 		#copy-btn.copied, #copy-assunto-btn.copied { 
  			background-color: #16a34a; /* green-600 */ 
  			color: white; 
  		} 
@@ -202,6 +202,22 @@
  			<span id="error-text" class="block sm:inline"></span> 
  		</div> 
 
+ 		<!-- Seção de Assunto do E-mail --> 
+ 		<div id="assunto-secao" class="hidden w-full max-w-7xl mx-auto mt-6"> 
+ 			<div class="bg-white p-6 rounded-xl shadow-lg"> 
+ 				<div class="flex justify-between items-center mb-4"> 
+ 					<h2 class="text-xl font-bold text-gray-900">Assunto do E-mail</h2> 
+ 					<button id="copy-assunto-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium py-2 px-4 rounded-lg flex items-center transition-colors duration-200"> 
+ 						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> 
+ 						<span id="copy-assunto-btn-text">Copiar Assunto</span> 
+ 					</button> 
+ 				</div> 
+ 				<div class="bg-gray-50 p-4 rounded-lg border border-gray-200"> 
+ 					<pre id="assunto-texto" class="text-gray-700 text-sm whitespace-pre-wrap font-sans"></pre> 
+ 				</div> 
+ 			</div> 
+ 		</div> 
+
  		<!-- Seção de Resultado --> 
  		<div id="resultado-secao" class="hidden w-full max-w-7xl mx-auto mt-6 mb-8"> 
  			<div class="bg-white p-6 rounded-xl shadow-lg"> 
@@ -250,15 +266,13 @@
  		</div> 
  	</div> 
 
- 	<!-- ATUALIZADO: Aumentado o espaçamento superior (mt-24) --> 
- 	<div class="text-center mt-24 text-sm text-gray-500"> 
- 		<img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-8 mx-auto mb-2" onerror="this.onerror=null;this.src='https://placehold.co/100x32/cccccc/ffffff?text=Logo';"> 
- 		<p>Gerador de Relatórios em Texto</p> 
- 	</div> 
-
  	<!-- Rodapé --> 
+ 	<div class="text-center mt-24 text-gray-500"> 
+ 		<img src="https://i.postimg.cc/8P1wKk9S/56802016-2fe7-4b17-a34a-1031006e0f37.png" alt="Logo da Empresa" class="h-8 mx-auto mb-2" onerror="this.onerror=null;this.src='https://placehold.co/100x32/cccccc/ffffff?text=Logo';"> 
+ 		<p class="text-base">Gerador de Relatórios em Texto</p> 
+ 	</div> 
  	<footer class="text-center py-4 mt-2 text-xs text-gray-400"> 
- 		<p>Feito por Marcos Santos (OPE NSE)</p> 
+ 		<a href="https://www.linkedin.com/in/marcos-mj-santos-aa696a233/" target="_blank" title="Ver Perfil" class="hover:underline">Feito por Marcos Santos (OPE NSE)</a>
  	</footer> 
 
  	<!-- Modal de Tutorial --> 
@@ -412,6 +426,10 @@
  			adicionarPontosBtn: document.getElementById('adicionar-pontos-btn'), 
  			errorMessage: document.getElementById('error-message'), 
  			errorText: document.getElementById('error-text'), 
+ 			assuntoSecao: document.getElementById('assunto-secao'),
+ 			assuntoTexto: document.getElementById('assunto-texto'),
+ 			copyAssuntoBtn: document.getElementById('copy-assunto-btn'),
+ 			copyAssuntoBtnText: document.getElementById('copy-assunto-btn-text'),
  			uploadCards: [ 
  				document.getElementById('upload-card-1'), 
  				document.getElementById('upload-card-2'), 
@@ -548,6 +566,7 @@
  			 
  			elements.gerarBtn.addEventListener('click', generateReport); 
  			elements.copyBtn.addEventListener('click', copyToClipboard); 
+ 			elements.copyAssuntoBtn.addEventListener('click', copyEmailSubject);
  			elements.atualizarRelatorioBtn.addEventListener('click', updateReportWithJustifications); 
  			elements.adicionarPontosBtn.addEventListener('click', addAttentionPointsToReport); 
 
@@ -579,12 +598,12 @@
 
  			showLoading(true); 
  			elements.resultadoSecao.classList.add('hidden'); 
+ 			elements.assuntoSecao.classList.add('hidden');
  			elements.justificativasSecao.classList.add('hidden'); 
  			elements.pontosAtencaoSecao.classList.add('hidden'); 
  			justificativas = {}; 
  			attentionPoints = {}; 
 
- 			// MODIFICADO: Lógica do prompt restaurada para incluir exemplos de dados opcionais
  			const prompt = ` 
  				Você é um assistente de logística ultrapreciso. Sua única tarefa é analisar as imagens fornecidas e extrair os dados solicitados, retornando-os ESTRITAMENTE no formato JSON. 
  				**Fontes de Dados (Imagens):** 1.  **Imagem 1 (Visão Geral):** Use para os totais gerais e destaques da cidade. 
@@ -846,6 +865,7 @@
  			const reportText = formatReport(reportData, false, false); 
  			elements.resultadoTexto.textContent = reportText; 
  			elements.resultadoSecao.classList.remove('hidden'); 
+ 			displayEmailSubject();
  			window.scrollTo(0, document.body.scrollHeight); 
  			 
  			if (reportData.documentosEmAtraso && reportData.documentosEmAtraso.length > 0) { 
@@ -853,7 +873,17 @@
  			} 
  			setupAttentionPoints(); 
  		} 
- 		 
+ 		
+ 		function displayEmailSubject() {
+ 			const filialNome = elements.filialNome.value.trim();
+ 			const today = new Date();
+ 			const formattedDate = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+ 			const subject = `${filialNome} - Acompanhamento de Entregas ${formattedDate} (1º Apontamento)`;
+
+ 			elements.assuntoTexto.textContent = subject;
+ 			elements.assuntoSecao.classList.remove('hidden');
+ 		}
+
  		function setupJustificativas(lateDocs) { 
  			elements.justificativasContainer.innerHTML = ''; 
  			 
@@ -946,6 +976,31 @@
  			elements.pontosAtencaoSecao.classList.add('hidden'); 
  			elements.copyBtn.focus(); 
  		} 
+
+ 		function copyEmailSubject() {
+ 			const textToCopy = elements.assuntoTexto.textContent;
+ 			const textArea = document.createElement("textarea");
+ 			textArea.value = textToCopy;
+ 			textArea.style.position = "absolute";
+ 			textArea.style.left = "-9999px";
+ 			document.body.appendChild(textArea);
+ 			textArea.select();
+ 			try {
+ 				const successful = document.execCommand('copy');
+ 				if (!successful) throw new Error('Falha ao copiar');
+ 				const originalText = elements.copyAssuntoBtnText.textContent;
+ 				elements.copyAssuntoBtn.classList.add('copied');
+ 				elements.copyAssuntoBtnText.textContent = 'Copiado!';
+ 				setTimeout(() => {
+ 					elements.copyAssuntoBtn.classList.remove('copied');
+ 					elements.copyAssuntoBtnText.textContent = originalText;
+ 				}, 2000);
+ 			} catch (err) {
+ 				console.error('Erro ao copiar assunto: ', err);
+ 				showError("Não foi possível copiar o assunto.");
+ 			}
+ 			document.body.removeChild(textArea);
+ 		}
 
  		function copyToClipboard() { 
  			const isRichText = elements.copyWithImagesCheckbox.checked; 
